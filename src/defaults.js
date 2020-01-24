@@ -1,4 +1,5 @@
 const defaultOptions = {
+  name: 'default',
   getUser: (query, done) => done(null, {}),
   verify: (query, user, done) => done(null, true),
   serialize: (user, done) => done(null, user),

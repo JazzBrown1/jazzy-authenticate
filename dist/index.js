@@ -4,13 +4,42 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 const strategies = {};
 
-const setStrategy = (strategy, options) => {
-  strategies[strategy] = options;
+const defaultOptions = {
+  name: 'default',
+  getUser: (query, done) => done(null, {}),
+  verify: (query, user, done) => done(null, true),
+  serialize: (user, done) => done(null, user),
+  deserialize: (user, done) => done(null, user),
+  useSessions: true,
+  extract: 'body',
+  clientType: 'user',
+  authenticateOnError: { status: 500 },
+  authenticateOnFail: { status: 401 },
+  checkNotLoggedOnFail: { status: 401 },
+  checkNotLoggedOnSuccess: null,
+  checkLoggedOnFail: { status: 401 },
+  checkLoggedOnSuccess: null,
+  loginOnSuccess: null,
+  logoutOnSuccess: null
+};
+
+const setStrategy = (strategy, options, isDefault) => {
+  strategies[strategy] = { ...options };
   strategies[strategy].name = strategy;
+  strategies[strategy].isDefault = false; // is default cannot be declared in options obj
+  if (isDefault) {
+    Object.assign(defaultOptions, options, { isDefault: true });
+    strategies[strategy].isDefault = true;
+  }
 };
 
 const modifyStrategy = (strategy, options) => {
   strategies[strategy] = { ...strategies[strategy], ...options };
+  strategies[strategy].isDefault = false;
+  if (strategies[strategy].isDefault) {
+    Object.assign(defaultOptions, options, { isDefault: true });
+    strategies[strategy].isDefault = true;
+  }
 };
 
 const makeExtractor = (extract) => {
@@ -33,24 +62,6 @@ const makeResponder = (end, type = 'end') => {
   throw new Error(`Invalid ${type} input`);
 };
 
-const defaultOptions = {
-  getUser: (query, done) => done(null, {}),
-  verify: (query, user, done) => done(null, true),
-  serialize: (user, done) => done(null, user),
-  deserialize: (user, done) => done(null, user),
-  useSessions: true,
-  extract: 'body',
-  clientType: 'user',
-  authenticateOnError: { status: 500 },
-  authenticateOnFail: { status: 401 },
-  checkNotLoggedOnFail: { status: 401 },
-  checkNotLoggedOnSuccess: null,
-  checkLoggedOnFail: { status: 401 },
-  checkLoggedOnSuccess: null,
-  loginOnSuccess: null,
-  logoutOnSuccess: null
-};
-
 const authenticate = (strategy, options) => {
   if (typeof strategy === 'object') {
     options = strategy;
@@ -63,13 +74,16 @@ const authenticate = (strategy, options) => {
     delete options.onError;
   } else options = {};
   if (strategy && !strategies[strategy]) throw new Error('strategy is not set');
-  options = strategy ? ({ ...defaultOptions, ...strategies[strategy], ...options }) : { ...defaultOptions, ...options };
+  strategy = strategy ? strategies[strategy] : {};
+  options = { ...defaultOptions, ...strategy, ...options };
   if (!options.verify) throw new Error('verify is required');
   if (typeof options.verify !== 'function') throw new Error('verify must be a function');
   if (!options.getUser) throw new Error('getUser is required');
   if (typeof options.getUser !== 'function') throw new Error('getUser must be a function');
   let { authenticateOnError, authenticateOnFail, extract } = options;
-  const { verify, getUser, clientType } = options;
+  const {
+    verify, getUser, clientType, name
+  } = options;
   extract = makeExtractor(extract);
   authenticateOnError = makeResponder(authenticateOnError);
   authenticateOnFail = makeResponder(authenticateOnFail);
@@ -81,7 +95,9 @@ const authenticate = (strategy, options) => {
       verify(query, user, (error2, result) => {
         if (error2) return authenticateOnError(req, res, error2);
         if (!result) return authenticateOnFail(req, res);
-        req.jazzyAuth = { user, clientType, query };
+        req.jazzy.auth = {
+          user, clientType, query, strategy: name
+        };
         next();
       });
     });

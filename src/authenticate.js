@@ -25,7 +25,9 @@ const authenticate = (strategy, options) => {
   if (!options.getUser) throw new Error('getUser is required');
   if (typeof options.getUser !== 'function') throw new Error('getUser must be a function');
   let { authenticateOnError, authenticateOnFail, extract } = options;
-  const { verify, getUser, clientType } = options;
+  const {
+    verify, getUser, clientType, name
+  } = options;
   extract = makeExtractor(extract);
   authenticateOnError = makeResponder(authenticateOnError);
   authenticateOnFail = makeResponder(authenticateOnFail);
@@ -38,7 +40,7 @@ const authenticate = (strategy, options) => {
         if (error2) return authenticateOnError(req, res, error2);
         if (!result) return authenticateOnFail(req, res);
         req.jazzy.auth = {
-          user, clientType, query, strategy
+          user, clientType, query, strategy: name
         };
         next();
       });
