@@ -2,27 +2,20 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-/* eslint-disable max-len */
-
 const strategies = {};
 
-// All Strategy options
-const defaultOptions = {
-  getUser: (query, done) => done(null, {}),
-  verify: (query, user, done) => done(null, true),
-  useSessions: true,
-  authenticateOnError: { status: 500 },
-  authenticateOnFail: { status: 401 },
-  extract: 'body',
-  clientType: 'user',
-  checkNotLoggedOnFail: { status: 401 },
-  checkNotLoggedOnSuccess: null,
-  checkLoggedOnFail: { status: 401 },
-  checkLoggedOnSuccess: null,
-  loginOnSuccess: null,
-  logoutOnSuccess: null,
-  serialize: (user, done) => done(null, user),
-  deserialize: (user, done) => done(null, user)
+const setStrategy = (strategy, options) => {
+  strategies[strategy] = options;
+  strategies[strategy].name = strategy;
+};
+
+const modifyStrategy = (strategy, options) => {
+  strategies[strategy] = { ...strategies[strategy], ...options };
+};
+
+const makeExtractor = (extract) => {
+  if (typeof extract === 'function') return extract;
+  return (req) => req[extract];
 };
 
 const redirectEnd = (redirect) => (req, res) => res.redirect(redirect);
@@ -40,18 +33,22 @@ const makeResponder = (end, type = 'end') => {
   throw new Error(`Invalid ${type} input`);
 };
 
-const makeExtractor = (extract) => {
-  if (typeof extract === 'function') return extract;
-  return (req) => req[extract];
-};
-
-const setStrategy = (strategy, options) => {
-  strategies[strategy] = options;
-  strategies[strategy].name = strategy;
-};
-
-const modifyStrategy = (strategy, options) => {
-  strategies[strategy] = { ...strategies[strategy], ...options };
+const defaultOptions = {
+  getUser: (query, done) => done(null, {}),
+  verify: (query, user, done) => done(null, true),
+  serialize: (user, done) => done(null, user),
+  deserialize: (user, done) => done(null, user),
+  useSessions: true,
+  extract: 'body',
+  clientType: 'user',
+  authenticateOnError: { status: 500 },
+  authenticateOnFail: { status: 401 },
+  checkNotLoggedOnFail: { status: 401 },
+  checkNotLoggedOnSuccess: null,
+  checkLoggedOnFail: { status: 401 },
+  checkLoggedOnSuccess: null,
+  loginOnSuccess: null,
+  logoutOnSuccess: null
 };
 
 const authenticate = (strategy, options) => {
@@ -67,7 +64,6 @@ const authenticate = (strategy, options) => {
   } else options = {};
   if (strategy && !strategies[strategy]) throw new Error('strategy is not set');
   options = strategy ? ({ ...defaultOptions, ...strategies[strategy], ...options }) : { ...defaultOptions, ...options };
-  // required
   if (!options.verify) throw new Error('verify is required');
   if (typeof options.verify !== 'function') throw new Error('verify must be a function');
   if (!options.getUser) throw new Error('getUser is required');
@@ -85,15 +81,16 @@ const authenticate = (strategy, options) => {
       verify(query, user, (error2, result) => {
         if (error2) return authenticateOnError(req, res, error2);
         if (!result) return authenticateOnFail(req, res);
-        req.jazzyAuth = {
-          user,
-          clientType,
-          query
-        };
+        req.jazzyAuth = { user, clientType, query };
         next();
       });
     });
   };
+};
+
+const noSessionInit = (req, res, next) => {
+  req.jazzy = { isLogged: false };
+  next();
 };
 
 const init = (strategy, options = {}) => {
@@ -104,10 +101,10 @@ const init = (strategy, options = {}) => {
   if (strategy && !strategies[strategy]) throw new Error('strategy is not set');
   strategy = strategy ? strategies[strategy] : {};
   const deserialize = options.deserialize || strategy.deserialize || defaultOptions.deserialize;
+  const useSessions = options.useSessions || strategy.useSessions || defaultOptions.useSessions;
+  if (!useSessions) return noSessionInit;
   return (req, res, next) => {
-    req.jazzy = {
-      isLogged: false
-    };
+    req.jazzy = { isLogged: false };
     if (req.session.jazzy) {
       req.jazzy.isLogged = req.session.jazzy.isLogged;
       if (req.session.jazzy.user) {
@@ -118,9 +115,7 @@ const init = (strategy, options = {}) => {
         });
       } else next();
     } else {
-      req.session.jazzy = {
-        isLogged: false
-      };
+      req.session.jazzy = { isLogged: false };
       next();
     }
   };
@@ -170,9 +165,9 @@ const checkLogged = (strategy, options = {}) => {
     strategy = null;
   }
   if (strategy && !strategies[strategy]) throw new Error('Strategy not set');
-  if (strategy) strategy = strategies[strategy];
-  let onFail = options.onFail || ((strategy && strategy.checkLoggedOnFail) ? strategy.checkLoggedOnFail : defaultOptions.checkLoggedOnFail);
-  let onSuccess = options.onSuccess || ((strategy && strategy.checkLoggedOnSuccess) ? strategy.checkLoggedOnSuccess : defaultOptions.checkLoggedOnSuccess);
+  strategy = strategy ? strategies[strategy] : {};
+  let onFail = options.onFail || strategy.checkLoggedOnFail || defaultOptions.checkLoggedOnFail;
+  let onSuccess = options.onSuccess || strategy.checkLoggedOnSuccess || defaultOptions.checkLoggedOnSuccess;
   onFail = makeResponder(onFail, 'onFail');
   if (!onSuccess) {
     return (req, res, next) => {
@@ -193,9 +188,9 @@ const checkNotLogged = (strategy, options = {}) => {
     strategy = null;
   }
   if (strategy && !strategies[strategy]) throw new Error('Strategy not set');
-  if (strategy) strategy = strategies[strategy];
-  let onFail = options.onFail || ((strategy && strategy.checkNotLoggedOnFail) ? strategy.checkNotLoggedOnFail : defaultOptions.checkNotLoggedOnFail);
-  let onSuccess = options.onSuccess || ((strategy && strategy.checkNotLoggedOnSuccess) ? strategy.checkNotLoggedOnSuccess : defaultOptions.checkNotLoggedOnSuccess);
+  strategy = strategy ? strategies[strategy] : {};
+  let onFail = options.onFail || strategy.checkNotLoggedOnFail || defaultOptions.checkNotLoggedOnFail;
+  let onSuccess = options.onSuccess || strategy.checkNotLoggedOnSuccess || defaultOptions.checkNotLoggedOnSuccess;
   onFail = makeResponder(onFail, 'onFail');
   if (!onSuccess) {
     return (req, res, next) => {
