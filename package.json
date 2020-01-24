@@ -1,6 +1,6 @@
 {
   "name": "jazzy-authenticate",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Authentication middleware for ExpressJs",
   "main": "dist/index.js",
   "entry": "dist/index.js",
@@ -14,7 +14,7 @@
     "middleware",
     "login",
     "jazzy"
-  ] ,
+  ],
   "author": "Jazz Brown",
   "license": "ISC",
   "devDependencies": {
@@ -24,6 +24,5 @@
     "rollup": "^1.29.0",
     "rollup-plugin-auto-external": "^2.0.0"
   },
-  "dependencies": {
-  }
+  "dependencies": {}
 }
