@@ -43,8 +43,8 @@ const login = (strategy, options = {}) => {
   strategy = strategy ? strategies[strategy] : {};
   const serialize = options.serialize || strategy.serialize || defaultOptions.serialize;
   return (req, res, next) => {
-    serialize(req.jazzyAuth.user, (err, serializedUser) => {
-      req.user = req.jazzyAuth.user;
+    serialize(req.jazzy.auth.user, (err, serializedUser) => {
+      req.user = req.jazzy.auth.user;
       req.jazzy.isLogged = true;
       req.session.jazzy.isLogged = true;
       req.session.jazzy.user = serializedUser;
