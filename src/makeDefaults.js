@@ -1,5 +1,5 @@
-const defaultOptions = {
-  name: 'default',
+const makeDefaults = () => ({
+  name: 'Strategy',
   getUser: (query, done) => done(null, {}),
   verify: (query, user, done) => done(null, true),
   serialize: (user, done) => done(null, user),
@@ -14,7 +14,8 @@ const defaultOptions = {
   checkLoggedOnFail: { status: 401 },
   checkLoggedOnSuccess: null,
   loginOnSuccess: null,
-  logoutOnSuccess: null
-};
+  logoutOnSuccess: null,
+  selfInit: false
+});
 
-export default defaultOptions;
+export default makeDefaults;

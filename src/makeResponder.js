@@ -10,6 +10,7 @@ const makeResponder = (end, type = 'end') => {
   if (end.send) return sendEnd(end.send);
   if (end.json) return jsonEnd(end.json);
   if (end.status) return statusEnd(end.status);
+  if (end.sendStatus) return statusEnd(end.sendStatus);
   throw new Error(`Invalid ${type} input`);
 };
 

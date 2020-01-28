@@ -1,24 +1,20 @@
 import strategies from './strategies';
-import defaultOptions from './defaults';
+import makeDefaults from './makeDefaults';
 
-const setStrategy = (strategy, options, isDefault) => {
-  strategies[strategy] = { ...options };
+const define = (strategy, options, isDefault) => {
+  strategies[strategy] = { ...makeDefaults(), ...options };
   strategies[strategy].name = strategy;
-  strategies[strategy].isDefault = false; // is default cannot be declared in options obj
+  strategies[strategy].isDefault = isDefault; // is default cannot be declared in options obj
   if (isDefault) {
-    Object.assign(defaultOptions, options, { isDefault: true });
-    strategies[strategy].isDefault = true;
+    strategies._default = strategies[strategy];
   }
 };
 
-const modifyStrategy = (strategy, options) => {
+const modify = (strategy, options) => {
+  if (!strategies[strategy]) throw new Error('Cannot modify a strategy that is not set');
   const { isDefault } = strategies[strategy];
   strategies[strategy] = { ...strategies[strategy], ...options };
-  strategies[strategy].isDefault = false;
-  if (isDefault) {
-    Object.assign(defaultOptions, options, { isDefault: true });
-    strategies[strategy].isDefault = true;
-  }
+  strategies[strategy].isDefault = isDefault; // cannot overwrite default
 };
 
-export { setStrategy, modifyStrategy };
+export { define, modify };

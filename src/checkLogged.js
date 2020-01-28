@@ -1,49 +1,42 @@
 
 /* eslint-disable max-len */
 import makeResponder from './makeResponder';
-import defaultOptions from './defaults';
-import strategies from './strategies';
+import buildOptions from './buildOptions';
 
-const checkLogged = (strategy, options = {}) => {
-  if (typeof strategy === 'object') {
-    options = strategy;
-    strategy = null;
+const checkLogged = (strategyName, overrides) => {
+  if (typeof strategyName === 'object') {
+    overrides = strategyName;
+    strategyName = null;
   }
-  if (strategy && !strategies[strategy]) throw new Error('Strategy not set');
-  strategy = strategy ? strategies[strategy] : {};
-  let onFail = options.onFail || strategy.checkLoggedOnFail || defaultOptions.checkLoggedOnFail;
-  let onSuccess = options.onSuccess || strategy.checkLoggedOnSuccess || defaultOptions.checkLoggedOnSuccess;
-  onFail = makeResponder(onFail, 'onFail');
-  if (!onSuccess) {
+  const options = buildOptions(strategyName, overrides, 'checkLogged');
+  const onFail = makeResponder(options.onFail, 'onFail');
+  if (!options.onSuccess) {
     return (req, res, next) => {
       if (req.jazzy.isLogged) return next();
       onFail(req, res);
     };
   }
-  onSuccess = makeResponder(onSuccess);
+  const onSuccess = makeResponder(options.onSuccess);
   return (req, res) => {
     if (req.jazzy.isLogged) return onSuccess(req, res);
     onFail(req, res);
   };
 };
 
-const checkNotLogged = (strategy, options = {}) => {
-  if (typeof strategy === 'object') {
-    options = strategy;
-    strategy = null;
+const checkNotLogged = (strategyName, overrides) => {
+  if (typeof strategyName === 'object') {
+    overrides = strategyName;
+    strategyName = null;
   }
-  if (strategy && !strategies[strategy]) throw new Error('Strategy not set');
-  strategy = strategy ? strategies[strategy] : {};
-  let onFail = options.onFail || strategy.checkNotLoggedOnFail || defaultOptions.checkNotLoggedOnFail;
-  let onSuccess = options.onSuccess || strategy.checkNotLoggedOnSuccess || defaultOptions.checkNotLoggedOnSuccess;
-  onFail = makeResponder(onFail, 'onFail');
-  if (!onSuccess) {
+  const options = buildOptions(strategyName, overrides, 'checkNotLogged');
+  const onFail = makeResponder(options.onFail, 'onFail');
+  if (!options.onSuccess) {
     return (req, res, next) => {
       if (!req.jazzy.isLogged) return next();
       onFail(req, res);
     };
   }
-  onSuccess = makeResponder(onSuccess);
+  const onSuccess = makeResponder(options.onSuccess);
   return (req, res) => {
     if (!req.jazzy.isLogged) return onSuccess(req, res);
     onFail(req, res);
