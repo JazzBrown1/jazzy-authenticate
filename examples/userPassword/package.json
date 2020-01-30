@@ -1,11 +1,11 @@
 {
-  "name": "jazzy-authenticate",
-  "version": "0.2.0",
+  "name": "jazzy-authenticate-password-login-example",
+  "version": "0.1.0",
   "description": "Authentication middleware for ExpressJs",
   "main": "dist/index.js",
   "entry": "dist/index.js",
   "scripts": {
-    "test": "echo \"Warning: no test specified\"",
+    "start": "npm run build && node dist/index.js",
     "build": "rollup --config"
   },
   "keywords": [
@@ -15,12 +15,8 @@
     "login",
     "jazzy"
   ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/JazzBrown1/jazzy-authenticate.git"
-  },
   "author": "Jazz Brown",
-  "license": "MIT",
+  "license": "ISC",
   "devDependencies": {
     "eslint": "^6.8.0",
     "eslint-config-airbnb-base": "^14.0.0",
@@ -28,8 +24,10 @@
     "rollup": "^1.29.0",
     "rollup-plugin-auto-external": "^2.0.0"
   },
-  "dependencies": {},
-  "peerDependencies": {
-    "express": "4.x"
+  "dependencies": {
+    "ejs": "^3.0.1",
+    "express": "^4.17.1",
+    "express-session": "^1.17.0",
+    "jazzy-authenticate": "file:../.."
   }
 }

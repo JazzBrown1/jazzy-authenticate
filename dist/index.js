@@ -3,7 +3,7 @@
 Object.defineProperty(exports, '__esModule', { value: true });
 
 const makeDefaults = () => ({
-  name: 'Strategy',
+  name: 'Model',
   getUser: (query, done) => done(null, {}),
   verify: (query, user, done) => done(null, true),
   serialize: (user, done) => done(null, user),
@@ -11,37 +11,50 @@ const makeDefaults = () => ({
   useSessions: true,
   extract: 'body',
   clientType: 'user',
+  initOnSuccess: null,
+  initOnError: { status: 500 },
   authenticateOnError: { status: 500 },
   authenticateOnFail: { status: 401 },
+  authenticateOnSuccess: null,
   checkNotLoggedOnFail: { status: 401 },
   checkNotLoggedOnSuccess: null,
   checkLoggedOnFail: { status: 401 },
   checkLoggedOnSuccess: null,
   loginOnSuccess: null,
   logoutOnSuccess: null,
-  selfInit: false
+  selfInit: false,
+  selfLogin: false,
+  deserializeUserOnError: { status: 500 },
+  deserializeUserOnSuccess: null,
+  deserializeTactic: 'always'
 });
 
-const strategies = {
+const models = {
   _default: makeDefaults()
 };
 
-strategies.name = '_default';
+models.name = '_default';
 
-const define = (strategy, options, isDefault) => {
-  strategies[strategy] = { ...makeDefaults(), ...options };
-  strategies[strategy].name = strategy;
-  strategies[strategy].isDefault = isDefault; // is default cannot be declared in options obj
+const define = (model, options, isDefault) => {
+  if (typeof model === 'object') {
+    isDefault = options;
+    options = model;
+    if (!options.name) throw new Error('Model must have a name');
+    model = model.name;
+  }
+  models[model] = { ...makeDefaults(), ...options };
+  models[model].name = model;
+  models[model].isDefault = isDefault; // is default cannot be declared in options obj
   if (isDefault) {
-    strategies._default = strategies[strategy];
+    models._default = models[model];
   }
 };
 
-const modify = (strategy, options) => {
-  if (!strategies[strategy]) throw new Error('Cannot modify a strategy that is not set');
-  const { isDefault } = strategies[strategy];
-  strategies[strategy] = { ...strategies[strategy], ...options };
-  strategies[strategy].isDefault = isDefault; // cannot overwrite default
+const modify = (model, options) => {
+  if (!models[model]) throw new Error('Cannot modify a model that is not set');
+  const { isDefault } = models[model];
+  Object.assign(models[model], options);
+  models[model].isDefault = isDefault; // cannot overwrite default
 };
 
 const makeExtractor = (extract) => {
@@ -72,9 +85,9 @@ const addEventsToOptions = (options, prefix) => {
   return options;
 };
 
-const makeOptionsObject = (strategyName, overrides) => {
-  if (strategyName && !strategies[strategyName]) throw new Error('strategy is not set');
-  return { ...strategies[strategyName || '_default'], ...overrides };
+const makeOptionsObject = (modelName, overrides) => {
+  if (modelName && !models[modelName]) throw new Error('model is not set');
+  return { ...models[modelName || '_default'], ...overrides };
 };
 
 const parseOptions = (options) => {
@@ -85,152 +98,219 @@ const parseOptions = (options) => {
   return options;
 };
 
-const buildOptions = (strategyName, overrides, prefix) => {
-  const options = makeOptionsObject(strategyName, overrides);
+const buildOptions = (modelName, overrides, prefix) => {
+  const options = makeOptionsObject(modelName, overrides);
   addEventsToOptions(options, prefix);
   parseOptions(options);
   return options;
 };
 
-const noSessionInit = (req, res, next) => {
-  req.jazzy = { isLogged: false };
-  next();
+const manualDeserializeInit = (serializedUser, deserialize, done, req) => {
+  req.deserializedUser = null;
+  done(null, function getUser(cb) {
+    if (this.deserializedUser) return cb(null, this.deserializedUser);
+    deserialize(this.jazzy.user, (err, deserializedUser2) => {
+      this.deserializedUser = deserializedUser2;
+      cb(err, deserializedUser2);
+    });
+  });
 };
 
-const init = (strategyName, overrides) => {
-  if (typeof strategyName === 'object') {
-    overrides = strategyName;
-    strategyName = null;
+const manualDeserializeAuth = (deserializedUser, deserialize) => function getUser(cb) {
+  if (this.deserializedUser) return cb(null, this.deserializedUser);
+  deserialize(this.jazzy.user, (err, deserializedUser2) => {
+    this.deserializedUser = deserializedUser2;
+    cb(err, deserializedUser2);
+  });
+};
+
+const alwaysDeserializeInit = (serializedUser, deserialize, done) => {
+  deserialize(serializedUser, done);
+};
+
+const alwaysDeserializeAuth = (deserializedUser) => deserializedUser;
+
+const noSessionInit = (options) => {
+  if (options.initOnSuccess) {
+    const onSuccess = makeResponder(options.initOnSuccess, 'initOnSuccess');
+    return (req, res, next) => {
+      req.jazzy = { isLogged: false };
+      onSuccess(req, res, next);
+    };
   }
-  const options = buildOptions(strategyName, overrides, 'na');
-  const { deserialize, useSessions } = options;
-  if (!useSessions) return noSessionInit;
   return (req, res, next) => {
     req.jazzy = { isLogged: false };
-    if (req.session.jazzy) {
-      req.jazzy.isLogged = req.session.jazzy.isLogged;
-      if (req.session.jazzy.user) {
-        deserialize(req.session.jazzy.user, (err, user) => {
-          req.jazzy.user = user;
-          req.user = user;
-          next();
-        });
-      } else next();
-    } else {
-      req.session.jazzy = { isLogged: false };
-      next();
-    }
-  };
-};
-
-const login = (strategyName, overrides) => {
-  if (typeof strategyName === 'object') {
-    overrides = strategyName;
-    strategyName = null;
-  }
-  const options = buildOptions(strategyName, overrides, 'login');
-  const { serialize, useSessions } = options;
-  if (!useSessions) throw new Error('Cannot use Login middleware when use sessions set false in strategy');
-  return (req, res, next) => {
-    serialize(req.jazzy.auth.user, (err, serializedUser) => {
-      req.jazzy.isLogged = true;
-      req.session.jazzy.isLogged = true;
-      req.session.jazzy.user = serializedUser;
-      next();
-    });
-  };
-};
-
-const logout = (strategyName, overrides) => {
-  if (typeof strategyName === 'object') {
-    overrides = strategyName;
-    strategyName = null;
-  }
-  const options = buildOptions(strategyName, overrides, 'logout');
-  if (!options.useSessions) throw new Error('Cannot use Logout middleware when use sessions set false in strategy');
-  const onSuccess = makeResponder(options.onSuccess);
-  return (req, res, next) => {
-    req.session.jazzy = { isLogged: false };
-    delete req.user;
-    req.jazzy = {
-      isLogged: false
-    };
-    if (onSuccess) return onSuccess();
     next();
   };
 };
 
-const authenticate = (strategyName, overrides) => {
-  if (typeof strategyName === 'object') {
-    overrides = strategyName;
-    strategyName = null;
+const init = (modelName, overrides) => {
+  if (typeof modelName === 'object') {
+    overrides = modelName;
+    modelName = null;
   }
-  const options = buildOptions(strategyName, overrides, 'authenticate');
+  const options = buildOptions(modelName, overrides, 'init');
+
+  if (!options.useSessions) return noSessionInit(options);
+
+  const { deserialize } = options;
+  const onError = makeResponder(options.initOnError, 'initOnError');
+  const deserializer = options.deserializeTactic === 'always' ? alwaysDeserializeInit : manualDeserializeInit;
+
+  const initMiddleware = (req, res, next) => {
+    if (req.session.jazzy) {
+      req.jazzy = req.session.jazzy;
+      if (req.jazzy.user) {
+        deserializer(req.jazzy.user, deserialize, (err, user) => {
+          if (err) onError(req, res, err, next);
+          req.user = user;
+          next();
+        }, req);
+      } else next();
+    } else {
+      req.jazzy = { isLogged: false };
+      req.session.jazzy = req.jazzy;
+      next();
+    }
+  };
+
+  if (options.initOnSuccess) return [initMiddleware, makeResponder(options.initOnSuccess, 'initOnSuccess')];
+  return initMiddleware;
+};
+
+const deserializeUser = (modelName, overrides) => {
+  if (typeof modelName === 'object') {
+    overrides = modelName;
+    modelName = null;
+  }
+  const options = buildOptions(modelName, overrides, 'deserializeUser');
+  const onError = makeResponder(options.deserializeUserOnError, 'deserializeUserOnError');
+  const deserializeMiddleware = (req, res, next) => {
+    if (!req.user) return next();
+    req.user((err) => {
+      if (err) return onError();
+      next();
+    });
+  };
+  if (options.deserializeUserOnSuccess) return [deserializeMiddleware, makeResponder(options.deserializeUserOnSuccess, 'deserializeUserOnSuccess')];
+  return deserializeMiddleware;
+};
+
+const login = (modelName, overrides) => {
+  if (typeof modelName === 'object') {
+    overrides = modelName;
+    modelName = null;
+  }
+  const options = buildOptions(modelName, overrides, 'login');
+  const { serialize, useSessions } = options;
+  if (!useSessions) throw new Error('Cannot use Login middleware when use sessions set false in model');
+  const loginMiddleware = (req, res, next) => {
+    serialize(req.deserializedUser, (err, serializedUser) => {
+      req.jazzy.user = serializedUser;
+      req.session.jazzy = req.jazzy;
+      next();
+    });
+  };
+  if (options.loginOnSuccess) return [loginMiddleware, makeResponder(options.loginOnSuccess, 'loginOnSuccess')];
+  return loginMiddleware;
+};
+
+const logout = (modelName, overrides) => {
+  if (typeof modelName === 'object') {
+    overrides = modelName;
+    modelName = null;
+  }
+  const options = buildOptions(modelName, overrides, 'logout');
+  if (!options.useSessions) throw new Error('Cannot use Logout middleware when use sessions set false in model');
+  const logoutMiddleware = (req, res, next) => {
+    delete req.user;
+    req.jazzy = {
+      isLogged: false
+    };
+    req.session.jazzy = req.jazzy;
+    next();
+  };
+  if (options.logoutOnSuccess) return [logoutMiddleware, makeResponder(options.logoutOnSuccess, 'logoutOnSuccess')];
+  return logoutMiddleware;
+};
+
+const authenticate = (modelName, overrides) => {
+  if (typeof modelName === 'object') {
+    overrides = modelName;
+    modelName = null;
+  }
+  const options = buildOptions(modelName, overrides, 'authenticate');
   const {
-    verify, getUser, clientType, name
+    verify, getUser, clientType, name, deserialize
   } = options;
   const extract = makeExtractor(options.extract);
-  const authenticateOnError = makeResponder(options.authenticateOnError);
-  const authenticateOnFail = makeResponder(options.authenticateOnFail);
+  const onError = makeResponder(options.authenticateOnError, 'authenticateOnError');
+  const onFail = makeResponder(options.authenticateOnFail, 'authenticateOnFail');
+  const deserializer = options.deserializeTactic === 'always' ? alwaysDeserializeAuth : manualDeserializeAuth;
 
   const authFunction = (req, res, next) => {
     extract(req, (error0, query) => {
-      if (error0) return authenticateOnError(req, res, error0);
+      if (error0) return onError(req, res, error0, next);
       getUser(query, (error1, user) => {
-        if (error1) return authenticateOnError(req, res, error1);
-        if (!user) return authenticateOnFail(req, res);
+        if (error1) return onError(req, res, error1, next);
+        if (!user) return onFail(req, res);
         verify(query, user, (error2, result) => {
-          if (error2) return authenticateOnError(req, res, error2);
-          if (!result) return authenticateOnFail(req, res);
+          if (error2) return onError(req, res, error2, next);
+          if (!result) return onFail(req, res);
           req.jazzy.auth = {
-            user, clientType, query, strategy: name
+            clientType, query, model: name, result
           };
-          req.user = user;
+          req.jazzy.isLogged = true;
+          req.user = deserializer(user, deserialize, req);
+          req.deserializedUser = user;
           next();
-        });
-      });
+        }, req);
+      }, req);
     });
   };
-  if (options.selfInit) return [init(options), authFunction];
-  return authFunction;
+  const middleware = [authFunction];
+  if (options.selfInit) middleware.pop(init(options));
+  if (options.selfLogin) middleware.push(login(options));
+  if (options.authenticateOnSuccess) middleware.push(makeResponder(options.authenticateOnSuccess, 'authenticateOnSuccess'));
+  return middleware.length === 1 ? authFunction : middleware;
 };
 
-const checkLogged = (strategyName, overrides) => {
-  if (typeof strategyName === 'object') {
-    overrides = strategyName;
-    strategyName = null;
+const checkLogged = (modelName, overrides) => {
+  if (typeof modelName === 'object') {
+    overrides = modelName;
+    modelName = null;
   }
-  const options = buildOptions(strategyName, overrides, 'checkLogged');
-  const onFail = makeResponder(options.onFail, 'onFail');
-  if (!options.onSuccess) {
+  const options = buildOptions(modelName, overrides, 'checkLogged');
+  const onFail = makeResponder(options.checkLoggedOnFail, 'checkLoggedOnFail');
+  if (!options.checkLoggedOnSuccess) {
     return (req, res, next) => {
       if (req.jazzy.isLogged) return next();
       onFail(req, res);
     };
   }
-  const onSuccess = makeResponder(options.onSuccess);
-  return (req, res) => {
-    if (req.jazzy.isLogged) return onSuccess(req, res);
+  const onSuccess = makeResponder(options.checkLoggedOnSuccess, 'checkLoggedOnSuccess');
+  return (req, res, next) => {
+    if (req.jazzy.isLogged) return onSuccess(req, res, next);
     onFail(req, res);
   };
 };
 
-const checkNotLogged = (strategyName, overrides) => {
-  if (typeof strategyName === 'object') {
-    overrides = strategyName;
-    strategyName = null;
+const checkNotLogged = (modelName, overrides) => {
+  if (typeof modelName === 'object') {
+    overrides = modelName;
+    modelName = null;
   }
-  const options = buildOptions(strategyName, overrides, 'checkNotLogged');
-  const onFail = makeResponder(options.onFail, 'onFail');
-  if (!options.onSuccess) {
+  const options = buildOptions(modelName, overrides, 'checkNotLogged');
+  const onFail = makeResponder(options.checkNotLoggedOnFail, 'checkNotLoggedOnFail');
+  if (!options.checkNotLoggedOnSuccess) {
     return (req, res, next) => {
       if (!req.jazzy.isLogged) return next();
       onFail(req, res);
     };
   }
-  const onSuccess = makeResponder(options.onSuccess);
-  return (req, res) => {
-    if (!req.jazzy.isLogged) return onSuccess(req, res);
+  const onSuccess = makeResponder(options.checkNotLoggedOnSuccess, 'checkNotLoggedOnSuccess');
+  return (req, res, next) => {
+    if (!req.jazzy.isLogged) return onSuccess(req, res, next);
     onFail(req, res);
   };
 };
@@ -239,8 +319,8 @@ exports.authenticate = authenticate;
 exports.checkLogged = checkLogged;
 exports.checkNotLogged = checkNotLogged;
 exports.define = define;
+exports.deserializeUser = deserializeUser;
 exports.init = init;
 exports.login = login;
 exports.logout = logout;
 exports.modify = modify;
-exports.setStrategy = define;

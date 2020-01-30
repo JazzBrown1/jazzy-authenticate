@@ -1,4 +1,4 @@
-import strategies from './strategies';
+import models from './models';
 
 const addEventsToOptions = (options, prefix) => {
   if (options.onFail) options[`${prefix}OnFail`] = options.onFail;
@@ -7,9 +7,9 @@ const addEventsToOptions = (options, prefix) => {
   return options;
 };
 
-const makeOptionsObject = (strategyName, overrides) => {
-  if (strategyName && !strategies[strategyName]) throw new Error('strategy is not set');
-  return { ...strategies[strategyName || '_default'], ...overrides };
+const makeOptionsObject = (modelName, overrides) => {
+  if (modelName && !models[modelName]) throw new Error('model is not set');
+  return { ...models[modelName || '_default'], ...overrides };
 };
 
 const parseOptions = (options) => {
@@ -20,8 +20,8 @@ const parseOptions = (options) => {
   return options;
 };
 
-const buildOptions = (strategyName, overrides, prefix) => {
-  const options = makeOptionsObject(strategyName, overrides);
+const buildOptions = (modelName, overrides, prefix) => {
+  const options = makeOptionsObject(modelName, overrides);
   addEventsToOptions(options, prefix);
   parseOptions(options);
   return options;
