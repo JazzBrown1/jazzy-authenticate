@@ -1,14 +1,18 @@
 # Jazzy Authenticate - Password Example
 > Fast and versatile authentication middleware for ExpressJs.
 
-Ensure you have installed Express.js
+Cml
 
 ```sh
-$ git clone https://github.com/JazzBrown1/jazzy-authenticate.git examples/userPassword
+$ git clone https://github.com/JazzBrown1/jazzy-authenticate.git
 
-$ cd examples/userPassword
+$ cd jazzy-authenticate/examples/userPassword
 
 $ npm install
 
 $ npm start
 ```
+
+Go to http://localhost:3001/ in your browser.
+
+Hack away!

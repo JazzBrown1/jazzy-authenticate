@@ -130,7 +130,7 @@ app.post('/login', checkNotLogged(), authenticate('google-login', { onError:{ se
 
 ```
 
-_For working examples and usage, please refer to the [examples section on project Github](https://github.com/JazzBrown1/jazzy-authenticate/tree/master/examples])._
+_For working examples and usage, please refer to the [examples section on project Github](https://github.com/JazzBrown1/jazzy-authenticate/tree/master/examples/])_
 
 
 ## Meta
