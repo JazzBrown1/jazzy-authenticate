@@ -34,7 +34,7 @@ define(
   'password',
   {
     extract: 'body',
-    getUser: (query, done) => db.findUserByUsername(query.username, done)
+    getUser: (query, done) => db.findUserByUsername(query.username, done),
     verify: (query, user, done) => done(null, query.password === user.password)
   },
   true
@@ -83,7 +83,7 @@ app.use(
   session({
     secret: 'a very secret secret',
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: false
   }),
 );
 
