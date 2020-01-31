@@ -268,8 +268,10 @@ const authenticate = (modelName, overrides) => {
       }, req);
     });
   };
-  const middleware = [authFunction];
-  if (options.selfInit) middleware.pop(init(options));
+
+  const middleware = [];
+  if (options.selfInit) middleware.push(init(options));
+  middleware.push(authFunction);
   if (options.selfLogin) middleware.push(login(options));
   if (options.authenticateOnSuccess) middleware.push(makeResponder(options.authenticateOnSuccess, 'authenticateOnSuccess'));
   return middleware.length === 1 ? authFunction : middleware;
