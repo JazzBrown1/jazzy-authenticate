@@ -29,7 +29,6 @@ $ npm install jazzy-authenticate
 
 Use the define function to define an Authentication Model.
 
-
 ```sh
 define(
   'password',
@@ -41,7 +40,10 @@ define(
   true
 );
 ```
-Authentication Model Defaults
+
+The first arguement is the model name. The second the model options. And the third option is whether to set this model to default (meaning it will not have to be refernced in the middleware). If the thirs arguement is ommited it defaults to false.
+
+Authentication Model Defaults:
 
 ```sh
 {
@@ -54,6 +56,7 @@ Authentication Model Defaults
   extract: 'body',
   clientType: 'user',
   initOnSuccess: null,
+  initOnError: { status: 500 },
   authenticateOnError: { status: 500 },
   authenticateOnFail: { status: 401 },
   authenticateOnSuccess: null,
@@ -64,7 +67,10 @@ Authentication Model Defaults
   loginOnSuccess: null,
   logoutOnSuccess: null,
   selfInit: false,
-  selfLogin: false
+  selfLogin: false,
+  deserializeUserOnError: { status: 500 },
+  deserializeUserOnSuccess: null,
+  deserializeTactic: 'always'
 }
 ```
 
@@ -98,7 +104,9 @@ The login() middleware is only for session based authentication.
 You can omit the login() call by setting selfLogin in the Model options or as an override into authenticate().
 
 ```sh
-app.use('/login', checkNotLogged(), authenticate({selfLogin: true}), (req, res) => {
+app.use('/login', checkNotLogged(), authenticate({
+  selfLogin: true
+}), (req, res) => {
   res.redirect('/home');
 });
 ```
@@ -124,9 +132,16 @@ You can use multiple authentication models in your app.
 When you want to use a Model that is not set to default, pass the model name as the first argument to the middleware.
 
 ```sh
-app.post('/login', checkNotLogged(), authenticate('google-login', { onError:{ send: 'Error!' } }), login('google-login'), (req, res) => {
-  res.redirect('home');
-});,
+app.post(
+  '/login',
+  checkNotLogged('oauth-2'),
+  authenticate('oauth-2', {
+    onError:{ send: 'Error!' }
+  }),
+  (req, res) => {
+    res.redirect('home');
+  }
+);
 
 ```
 
