@@ -41,7 +41,7 @@ define(
 );
 ```
 
-The first arguement is the model name. The second the model options. And the third option is whether to set this model to default (meaning it will not have to be refernced in the middleware). If the thirs arguement is ommited it defaults to false.
+The first arguement is the model name. The second the model options. And the third option is whether to set this model to default (meaning it will not have to be refernced in the middleware). If the third arguement is ommited it defaults to false.
 
 Authentication Model Defaults:
 
