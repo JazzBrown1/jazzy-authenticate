@@ -48,29 +48,27 @@ Authentication Model Defaults:
 ```sh
 {
   name: 'Model',
+  useSessions: true,
+  deserializeTactic: 'always',
+  extract: 'body',
+  clientType: 'user',
+  selfInit: false,
   getUser: (query, done) => done(null, {}),
   verify: (query, user, done) => done(null, true),
   serialize: (user, done) => done(null, user),
   deserialize: (user, done) => done(null, user),
-  useSessions: true,
-  extract: 'body',
-  clientType: 'user',
-  initOnSuccess: null,
   initOnError: { status: 500 },
+  initOnSuccess: null,
   authenticateOnError: { status: 500 },
   authenticateOnFail: { status: 401 },
   authenticateOnSuccess: null,
-  checkNotLoggedOnFail: { status: 401 },
-  checkNotLoggedOnSuccess: null,
-  checkLoggedOnFail: { status: 401 },
-  checkLoggedOnSuccess: null,
-  loginOnSuccess: null,
+  checkAuthenticatedOnFail: { status: 401 },
+  checkAuthenticatedOnSuccess: null,
+  checkUnauthenticatedOnFail: { status: 401 },
+  checkUnauthenticatedOnSuccess: null,
   logoutOnSuccess: null,
-  selfInit: false,
-  selfLogin: false,
   deserializeUserOnError: { status: 500 },
   deserializeUserOnSuccess: null,
-  deserializeTactic: 'always'
 }
 ```
 
@@ -90,31 +88,19 @@ app.use(
 app.use(init());
 ```
 
-Use the authenticate() middleware to authenticate a client and the login() middleware to save the authentication to a session
+Use the authenticate() middleware to authenticate a client.
 
 ```sh
-app.use('/login', checkNotLogged(), authenticate(), login(), (req, res) => {
+app.use('/login', checkUnauthenticated(), authenticate(), (req, res) => {
   res.redirect('/home');
 });
 
 ```
 
-The login() middleware is only for session based authentication.
-
-You can omit the login() call by setting selfLogin in the Model options or as an override into authenticate().
+You can block routes by using the checkAuthenticated() or checkUnauthenticated() middleware.
 
 ```sh
-app.use('/login', checkNotLogged(), authenticate({
-  selfLogin: true
-}), (req, res) => {
-  res.redirect('/home');
-});
-```
-
-You can block routes by using the checkLogged() or checkNotLogged() middleware.
-
-```sh
-app.use('/api/private/', checkLogged(), privateApiRoutes);
+app.use('/api/private/', checkAuthenticated(), privateApiRoutes);
 ```
 
 Sometimes you may need different fail, error or success responses to those set in the Authentication Model, for example this api expects a json response.
@@ -124,7 +110,7 @@ const overrides = {
   onFail: { json: { error: 'You must be logged in to get the date' } },
   onError: { json: { error: 'Internal server error' } },
 }
-app.get('/api/private/', checkLogged(overrides), privateApiRoutes);
+app.get('/api/private/', checkAuthenticated(overrides), privateApiRoutes);
 ```
 
 You can use multiple authentication models in your app.
@@ -134,7 +120,7 @@ When you want to use a Model that is not set to default, pass the model name as 
 ```sh
 app.post(
   '/login',
-  checkNotLogged('oauth-2'),
+  checkUnauthenticated('oauth-2'),
   authenticate('oauth-2', {
     onError:{ send: 'Error!' }
   }),

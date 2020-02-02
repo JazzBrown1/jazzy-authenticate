@@ -2,31 +2,39 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
+// eslint-disable-next-line no-unused-vars
+
 const makeDefaults = () => ({
   name: 'Model',
+  useSessions: true,
+  deserializeTactic: 'always',
+  extract: 'body',
+  clientType: 'user',
+  selfInit: false,
   getUser: (query, done) => done(null, {}),
   verify: (query, user, done) => done(null, true),
   serialize: (user, done) => done(null, user),
   deserialize: (user, done) => done(null, user),
-  useSessions: true,
-  extract: 'body',
-  clientType: 'user',
-  initOnSuccess: null,
   initOnError: { status: 500 },
+  initOnSuccess: null,
   authenticateOnError: { status: 500 },
   authenticateOnFail: { status: 401 },
   authenticateOnSuccess: null,
-  checkNotLoggedOnFail: { status: 401 },
-  checkNotLoggedOnSuccess: null,
-  checkLoggedOnFail: { status: 401 },
-  checkLoggedOnSuccess: null,
-  loginOnSuccess: null,
+  checkAuthenticatedOnFail: { status: 401 },
+  checkAuthenticatedOnSuccess: null,
+  checkUnauthenticatedOnFail: { status: 401 },
+  checkUnauthenticatedOnSuccess: null,
   logoutOnSuccess: null,
-  selfInit: false,
-  selfLogin: false,
   deserializeUserOnError: { status: 500 },
   deserializeUserOnSuccess: null,
-  deserializeTactic: 'always'
+
+
+  selfLogin: false, // deprecated
+  checkNotLoggedOnFail: { status: 401 }, // to be superseded by checkAuthentication()
+  checkNotLoggedOnSuccess: null, // to be superseded by checkAuthentication()
+  checkLoggedOnFail: { status: 401 }, // to be superseded by checkAuthentication()
+  checkLoggedOnSuccess: null, // to be superseded by checkAuthentication()
+  loginOnSuccess: null, // login() deprecated, this still calls a pass through
 });
 
 const models = {
@@ -116,11 +124,11 @@ const manualDeserializeInit = (serializedUser, deserialize, done, req) => {
   });
 };
 
-const manualDeserializeAuth = (deserializedUser, deserialize) => function getUser(cb) {
+const manualDeserializeAuth = (d, deserialize) => function getUser(cb) {
   if (this.deserializedUser) return cb(null, this.deserializedUser);
-  deserialize(this.jazzy.user, (err, deserializedUser2) => {
-    this.deserializedUser = deserializedUser2;
-    cb(err, deserializedUser2);
+  deserialize(this.jazzy.user, (err, deserializedUser) => {
+    this.deserializedUser = deserializedUser;
+    cb(err, deserializedUser);
   });
 };
 
@@ -134,12 +142,12 @@ const noSessionInit = (options) => {
   if (options.initOnSuccess) {
     const onSuccess = makeResponder(options.initOnSuccess, 'initOnSuccess');
     return (req, res, next) => {
-      req.jazzy = { isLogged: false };
+      req.jazzy = { isAuthenticated: false };
       onSuccess(req, res, next);
     };
   }
   return (req, res, next) => {
-    req.jazzy = { isLogged: false };
+    req.jazzy = { isAuthenticated: false, auth: {} };
     next();
   };
 };
@@ -168,7 +176,7 @@ const init = (modelName, overrides) => {
         }, req);
       } else next();
     } else {
-      req.jazzy = { isLogged: false };
+      req.jazzy = { isAuthenticated: false, auth: {} };
       req.session.jazzy = req.jazzy;
       next();
     }
@@ -196,23 +204,34 @@ const deserializeUser = (modelName, overrides) => {
   return deserializeMiddleware;
 };
 
-const login = (modelName, overrides) => {
+const saveSession = (modelName, overrides) => {
   if (typeof modelName === 'object') {
     overrides = modelName;
     modelName = null;
   }
-  const options = buildOptions(modelName, overrides, 'login');
-  const { serialize, useSessions } = options;
-  if (!useSessions) throw new Error('Cannot use Login middleware when use sessions set false in model');
-  const loginMiddleware = (req, res, next) => {
+  const options = buildOptions(modelName, overrides, 'saveSession');
+  const { serialize } = options;
+  return (req, res, next) => {
     serialize(req.deserializedUser, (err, serializedUser) => {
       req.jazzy.user = serializedUser;
       req.session.jazzy = req.jazzy;
       next();
     });
   };
-  if (options.loginOnSuccess) return [loginMiddleware, makeResponder(options.loginOnSuccess, 'loginOnSuccess')];
-  return loginMiddleware;
+};
+
+const login = (modelName, overrides) => {
+  process.emitWarning(
+    '`login()` is deprecated `authenticate()` will save session if useSessions is set to true',
+    'DeprecationWarning'
+  );
+  if (typeof modelName === 'object') {
+    overrides = modelName;
+    modelName = null;
+  }
+  const options = buildOptions(modelName, overrides, 'login');
+  if (options.loginOnSuccess) return makeResponder(options.loginOnSuccess);
+  return (req, res, next) => next();
 };
 
 const logout = (modelName, overrides) => {
@@ -225,7 +244,8 @@ const logout = (modelName, overrides) => {
   const logoutMiddleware = (req, res, next) => {
     delete req.user;
     req.jazzy = {
-      isLogged: false
+      isAuthenticated: false,
+      auth: {}
     };
     req.session.jazzy = req.jazzy;
     next();
@@ -257,11 +277,11 @@ const authenticate = (modelName, overrides) => {
         verify(query, user, (error2, result) => {
           if (error2) return onError(req, res, error2, next);
           if (!result) return onFail(req, res);
-          req.jazzy.auth = {
+          req.jazzy.auth[name] = {
             clientType, query, model: name, result
           };
-          req.jazzy.isLogged = true;
-          req.user = deserializer(user, deserialize, req);
+          req.jazzy.isAuthenticated = true;
+          req.user = deserializer(user, deserialize);
           req.deserializedUser = user;
           next();
         }, req);
@@ -272,12 +292,16 @@ const authenticate = (modelName, overrides) => {
   const middleware = [];
   if (options.selfInit) middleware.push(init(options));
   middleware.push(authFunction);
-  if (options.selfLogin) middleware.push(login(options));
+  if (options.useSessions) middleware.push(saveSession(options));
   if (options.authenticateOnSuccess) middleware.push(makeResponder(options.authenticateOnSuccess, 'authenticateOnSuccess'));
   return middleware.length === 1 ? authFunction : middleware;
 };
 
 const checkLogged = (modelName, overrides) => {
+  process.emitWarning(
+    '`checkLogged()` will be deprecated, use `checkAuthenticated()` instead',
+    'DeprecationWarning'
+  );
   if (typeof modelName === 'object') {
     overrides = modelName;
     modelName = null;
@@ -286,18 +310,22 @@ const checkLogged = (modelName, overrides) => {
   const onFail = makeResponder(options.checkLoggedOnFail, 'checkLoggedOnFail');
   if (!options.checkLoggedOnSuccess) {
     return (req, res, next) => {
-      if (req.jazzy.isLogged) return next();
+      if (req.jazzy.isAuthenticated) return next();
       onFail(req, res);
     };
   }
   const onSuccess = makeResponder(options.checkLoggedOnSuccess, 'checkLoggedOnSuccess');
   return (req, res, next) => {
-    if (req.jazzy.isLogged) return onSuccess(req, res, next);
+    if (req.jazzy.isAuthenticated) return onSuccess(req, res, next);
     onFail(req, res);
   };
 };
 
 const checkNotLogged = (modelName, overrides) => {
+  process.emitWarning(
+    '`checkNotLogged()` will be deprecated, use `checkUnauthenticated()` instead',
+    'DeprecationWarning'
+  );
   if (typeof modelName === 'object') {
     overrides = modelName;
     modelName = null;
@@ -306,23 +334,66 @@ const checkNotLogged = (modelName, overrides) => {
   const onFail = makeResponder(options.checkNotLoggedOnFail, 'checkNotLoggedOnFail');
   if (!options.checkNotLoggedOnSuccess) {
     return (req, res, next) => {
-      if (!req.jazzy.isLogged) return next();
+      if (!req.jazzy.isAuthenticated) return next();
       onFail(req, res);
     };
   }
   const onSuccess = makeResponder(options.checkNotLoggedOnSuccess, 'checkNotLoggedOnSuccess');
   return (req, res, next) => {
-    if (!req.jazzy.isLogged) return onSuccess(req, res, next);
+    if (!req.jazzy.isAuthenticated) return onSuccess(req, res, next);
+    onFail(req, res);
+  };
+};
+
+const checkAuthenticated = (modelName, overrides) => {
+  if (typeof modelName === 'object') {
+    overrides = modelName;
+    modelName = null;
+  }
+  const options = buildOptions(modelName, overrides, 'checkAuthenticated');
+  const onFail = makeResponder(options.checkAuthenticatedOnFail, 'checkAuthenticatedOnFail');
+  if (!options.checkAuthenticatedOnSuccess) {
+    return (req, res, next) => {
+      if (req.jazzy.isAuthenticated) return next();
+      onFail(req, res);
+    };
+  }
+  const onSuccess = makeResponder(options.checkAuthenticatedOnSuccess, 'checkAuthenticatedOnSuccess');
+  return (req, res, next) => {
+    if (req.jazzy.isAuthenticated) return onSuccess(req, res, next);
+    onFail(req, res);
+  };
+};
+
+const checkUnauthenticated = (modelName, overrides) => {
+  if (typeof modelName === 'object') {
+    overrides = modelName;
+    modelName = null;
+  }
+  const options = buildOptions(modelName, overrides, 'checkUnauthenticated');
+  const onFail = makeResponder(options.checkUnauthenticatedOnFail, 'checkUnauthenticatedOnFail');
+  if (!options.checkUnauthenticatedOnSuccess) {
+    return (req, res, next) => {
+      if (!req.jazzy.isAuthenticated) return next();
+      onFail(req, res);
+    };
+  }
+  const onSuccess = makeResponder(options.checkUnauthenticatedOnSuccess, 'checkUnauthenticatedOnSuccess');
+  return (req, res, next) => {
+    if (!req.jazzy.isAuthenticated) return onSuccess(req, res, next);
     onFail(req, res);
   };
 };
 
 exports.authenticate = authenticate;
+exports.checkAuthenticated = checkAuthenticated;
 exports.checkLogged = checkLogged;
 exports.checkNotLogged = checkNotLogged;
+exports.checkUnauthenticated = checkUnauthenticated;
 exports.define = define;
 exports.deserializeUser = deserializeUser;
 exports.init = init;
+exports.initiate = init;
 exports.login = login;
 exports.logout = logout;
 exports.modify = modify;

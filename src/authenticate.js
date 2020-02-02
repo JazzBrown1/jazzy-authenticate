@@ -1,7 +1,7 @@
 import makeExtractor from './makeExtractor';
 import makeResponder from './makeResponder';
 import buildOptions from './buildOptions';
-import { init, login } from './login';
+import { init, saveSession } from './login';
 import { alwaysDeserializeAuth, manualDeserializeAuth } from './deserializers';
 
 const authenticate = (modelName, overrides) => {
@@ -27,11 +27,11 @@ const authenticate = (modelName, overrides) => {
         verify(query, user, (error2, result) => {
           if (error2) return onError(req, res, error2, next);
           if (!result) return onFail(req, res);
-          req.jazzy.auth = {
+          req.jazzy.auth[name] = {
             clientType, query, model: name, result
           };
-          req.jazzy.isLogged = true;
-          req.user = deserializer(user, deserialize, req);
+          req.jazzy.isAuthenticated = true;
+          req.user = deserializer(user, deserialize);
           req.deserializedUser = user;
           next();
         }, req);
@@ -42,7 +42,7 @@ const authenticate = (modelName, overrides) => {
   const middleware = [];
   if (options.selfInit) middleware.push(init(options));
   middleware.push(authFunction);
-  if (options.selfLogin) middleware.push(login(options));
+  if (options.useSessions) middleware.push(saveSession(options));
   if (options.authenticateOnSuccess) middleware.push(makeResponder(options.authenticateOnSuccess, 'authenticateOnSuccess'));
   return middleware.length === 1 ? authFunction : middleware;
 };

@@ -6,12 +6,12 @@ const noSessionInit = (options) => {
   if (options.initOnSuccess) {
     const onSuccess = makeResponder(options.initOnSuccess, 'initOnSuccess');
     return (req, res, next) => {
-      req.jazzy = { isLogged: false };
+      req.jazzy = { isAuthenticated: false };
       onSuccess(req, res, next);
     };
   }
   return (req, res, next) => {
-    req.jazzy = { isLogged: false };
+    req.jazzy = { isAuthenticated: false, auth: {} };
     next();
   };
 };
@@ -40,7 +40,7 @@ const init = (modelName, overrides) => {
         }, req);
       } else next();
     } else {
-      req.jazzy = { isLogged: false };
+      req.jazzy = { isAuthenticated: false, auth: {} };
       req.session.jazzy = req.jazzy;
       next();
     }
@@ -68,23 +68,34 @@ const deserializeUser = (modelName, overrides) => {
   return deserializeMiddleware;
 };
 
-const login = (modelName, overrides) => {
+const saveSession = (modelName, overrides) => {
   if (typeof modelName === 'object') {
     overrides = modelName;
     modelName = null;
   }
-  const options = buildOptions(modelName, overrides, 'login');
-  const { serialize, useSessions } = options;
-  if (!useSessions) throw new Error('Cannot use Login middleware when use sessions set false in model');
-  const loginMiddleware = (req, res, next) => {
+  const options = buildOptions(modelName, overrides, 'saveSession');
+  const { serialize } = options;
+  return (req, res, next) => {
     serialize(req.deserializedUser, (err, serializedUser) => {
       req.jazzy.user = serializedUser;
       req.session.jazzy = req.jazzy;
       next();
     });
   };
-  if (options.loginOnSuccess) return [loginMiddleware, makeResponder(options.loginOnSuccess, 'loginOnSuccess')];
-  return loginMiddleware;
+};
+
+const login = (modelName, overrides) => {
+  process.emitWarning(
+    '`login()` is deprecated `authenticate()` will save session if useSessions is set to true',
+    'DeprecationWarning'
+  );
+  if (typeof modelName === 'object') {
+    overrides = modelName;
+    modelName = null;
+  }
+  const options = buildOptions(modelName, overrides, 'login');
+  if (options.loginOnSuccess) return makeResponder(options.loginOnSuccess);
+  return (req, res, next) => next();
 };
 
 const logout = (modelName, overrides) => {
@@ -97,7 +108,8 @@ const logout = (modelName, overrides) => {
   const logoutMiddleware = (req, res, next) => {
     delete req.user;
     req.jazzy = {
-      isLogged: false
+      isAuthenticated: false,
+      auth: {}
     };
     req.session.jazzy = req.jazzy;
     next();
@@ -107,5 +119,5 @@ const logout = (modelName, overrides) => {
 };
 
 export {
-  init, login, logout, deserializeUser
+  init, login, logout, deserializeUser, saveSession
 };

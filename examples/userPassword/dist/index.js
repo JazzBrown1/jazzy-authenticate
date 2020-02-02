@@ -26,10 +26,10 @@ jazzyAuthenticate.define(
     serialize: (user, done) => done(null, user.username), // don't save passwords in sessions
     deserialize: (user, done) => done(null, users[user]),
     authenticateOnFail: (req, res) => res.render('login', { error: 'Password or username did not match! Try again' }), // Accepts a response object or response function
-    loginOnSuccess: { redirect: '/' }, // equivalent to "(req, res) => res.redirect('/')"
+    authenticateOnSuccess: { redirect: '/' }, // equivalent to "(req, res) => res.redirect('/')"
     logoutOnSuccess: { redirect: '/login' },
-    checkLoggedOnFail: (req, res) => res.redirect('/login'),
-    checkNotLoggedOnFail: { redirect: '/' },
+    checkAuthenticatedOnFail: (req, res) => res.redirect('/login'),
+    checkUnauthenticatedOnFail: { redirect: '/' },
     deserializeTactic: 'never' // req.user is a callback function that only deserializes user when required
   },
   true // Set as default <optional> defaults to false
@@ -54,10 +54,13 @@ app.use(session({
 }));
 
 // Initiate jazzy authenticate on the request
-app.use(jazzyAuthenticate.init());
+app.use(jazzyAuthenticate.init(), (req, r, next) => {
+  console.log(req.jazzy.auth);
+  next();
+});
 
 // render home page if logged in
-app.get('/', jazzyAuthenticate.checkLogged(), (req, res) => {
+app.get('/', jazzyAuthenticate.checkAuthenticated(), (req, res) => {
   // Manual deserialize tactic
   req.user((err, user) => {
     if (err) res.sendStatus(500);
@@ -66,16 +69,16 @@ app.get('/', jazzyAuthenticate.checkLogged(), (req, res) => {
 });
 
 // render login page if not logged in
-app.get('/login', jazzyAuthenticate.checkNotLogged(), (req, res) => res.render('login', { error: res.locals.error }));
+app.get('/login', jazzyAuthenticate.checkUnauthenticated(), (req, res) => res.render('login', { error: res.locals.error }));
 
 // logout if not logged in
-app.get('/logout', jazzyAuthenticate.checkLogged(), jazzyAuthenticate.logout());
+app.get('/logout', jazzyAuthenticate.checkAuthenticated(), jazzyAuthenticate.logout());
 
 // if logged out authenticate the user and login
-app.post('/login', jazzyAuthenticate.checkNotLogged(), jazzyAuthenticate.authenticate(), jazzyAuthenticate.login());
+app.post('/login', jazzyAuthenticate.checkUnauthenticated(), jazzyAuthenticate.authenticate());
 
 // Use overrides when you want different fail and success responses for example this api expects a json response
-app.get('/api/getDate', jazzyAuthenticate.checkLogged({ onFail: { json: { error: 'You must be logged in to get the date' } } }), (req, res) => {
+app.get('/api/getDate', jazzyAuthenticate.checkAuthenticated({ onFail: { json: { error: 'You must be logged in to get the date' } } }), (req, res) => {
   res.json({ date: new Date() });
 });
 
