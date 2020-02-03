@@ -8,7 +8,6 @@ import {
 
 // The users database
 const users = {
-  j: { username: 'j', password: '' },
   bob: { username: 'bob', password: 'password' },
   dave: { username: 'dave', password: 'password' }
 };
