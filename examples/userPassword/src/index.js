@@ -51,10 +51,7 @@ app.use(session({
 }));
 
 // Initiate jazzy authenticate on the request
-app.use(init(), (req, r, next) => {
-  console.log(req.jazzy.auth);
-  next();
-});
+app.use(init());
 
 // render home page if logged in
 app.get('/', checkAuthenticated(), (req, res) => {
