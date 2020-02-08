@@ -6,7 +6,7 @@
   "entry": "dist/index.js",
   "scripts": {
     "test": "nyc --reporter=lcov --reporter=text-summary mocha",
-    "coverage": "nyc report --reporter=lcov | coveralls",
+    "coverage": "nyc cover ./node_modules/mocha/bin/_mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage",
     "build": "rollup --config"
   },
   "keywords": [
