@@ -8,7 +8,6 @@ import {
 
 // The users database
 const users = {
-  j: { username: 'j', password: '' },
   bob: { username: 'bob', password: 'password' },
   dave: { username: 'dave', password: 'password' }
 };
@@ -51,10 +50,7 @@ app.use(session({
 }));
 
 // Initiate jazzy authenticate on the request
-app.use(init(), (req, r, next) => {
-  console.log(req.jazzy.auth);
-  next();
-});
+app.use(init());
 
 // render home page if logged in
 app.get('/', checkAuthenticated(), (req, res) => {
