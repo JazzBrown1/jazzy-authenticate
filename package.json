@@ -36,8 +36,6 @@
     "shortid": "^2.2.15",
     "coveralls": "^3.0.9"
   },
-  "dependencies": {
-  },
   "peerDependencies": {
     "express": "4.x"
   }
