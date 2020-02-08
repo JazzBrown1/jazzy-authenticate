@@ -3,6 +3,7 @@
 
 [![Version][npm-version]][npm-url]
 [![Dependencies][npm-dependencies]][npm-url]
+[![Coverage Status](https://coveralls.io/repos/github/JazzBrown1/jazzy-authenticate/badge.svg?branch=master)](https://coveralls.io/github/JazzBrown1/jazzy-authenticate?branch=master)
 
 Jazzy Authenticate is a flexible and dynamic authentication middleware for express.js. It has been designed to be easy to use, modular, unopinionated and take the complexities out of building authentication into server apps.
 
