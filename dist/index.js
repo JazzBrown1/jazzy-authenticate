@@ -2,8 +2,6 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-// eslint-disable-next-line no-unused-vars
-
 const makeDefaults = () => ({
   name: 'Model',
   useSessions: true,
@@ -20,28 +18,20 @@ const makeDefaults = () => ({
   authenticateOnError: { status: 500 },
   authenticateOnFail: { status: 401 },
   authenticateOnSuccess: null,
+  checkAuthenticationOnFail: { status: 401 },
+  checkAuthenticationOnSuccess: null,
   checkAuthenticatedOnFail: { status: 401 },
   checkAuthenticatedOnSuccess: null,
   checkUnauthenticatedOnFail: { status: 401 },
   checkUnauthenticatedOnSuccess: null,
   logoutOnSuccess: null,
   deserializeUserOnError: { status: 500 },
-  deserializeUserOnSuccess: null,
-
-
-  selfLogin: false, // deprecated
-  checkNotLoggedOnFail: { status: 401 }, // to be superseded by checkAuthentication()
-  checkNotLoggedOnSuccess: null, // to be superseded by checkAuthentication()
-  checkLoggedOnFail: { status: 401 }, // to be superseded by checkAuthentication()
-  checkLoggedOnSuccess: null, // to be superseded by checkAuthentication()
-  loginOnSuccess: null, // login() deprecated, this still calls a pass through
+  deserializeUserOnSuccess: null
 });
 
 const models = {
   _default: makeDefaults()
 };
-
-models.name = '_default';
 
 const define = (model, options, isDefault) => {
   if (typeof model === 'object') {
@@ -75,7 +65,7 @@ const sendEnd = (data) => (req, res) => res.send(data);
 const jsonEnd = (json) => (req, res) => res.json(json);
 const statusEnd = (status) => (req, res) => res.sendStatus(status);
 
-const makeResponder = (end, type = 'end') => {
+const makeResponder = (end, type) => {
   if (typeof end === 'function') return end;
   if (typeof end !== 'object') throw new Error(`Invalid ${type} input, type ${typeof end} - ${end}`);
   if (end.redirect) return redirectEnd(end.redirect);
@@ -99,9 +89,7 @@ const makeOptionsObject = (modelName, overrides) => {
 };
 
 const parseOptions = (options) => {
-  if (!options.verify) throw new Error('verify is required');
   if (typeof options.verify !== 'function') throw new Error('verify must be a function');
-  if (!options.getUser) throw new Error('getUser is required');
   if (typeof options.getUser !== 'function') throw new Error('getUser must be a function');
   return options;
 };
@@ -111,6 +99,17 @@ const buildOptions = (modelName, overrides, prefix) => {
   addEventsToOptions(options, prefix);
   parseOptions(options);
   return options;
+};
+
+const saveSession = (overrides) => {
+  const { serialize } = overrides;
+  return (req, res, next) => {
+    serialize(req.deserializedUser, (err, serializedUser) => {
+      req.jazzy.user = serializedUser;
+      req.session.jazzy = req.jazzy;
+      next();
+    });
+  };
 };
 
 const manualDeserializeInit = (serializedUser, deserialize, done, req) => {
@@ -124,13 +123,7 @@ const manualDeserializeInit = (serializedUser, deserialize, done, req) => {
   });
 };
 
-const manualDeserializeAuth = (d, deserialize) => function getUser(cb) {
-  if (this.deserializedUser) return cb(null, this.deserializedUser);
-  deserialize(this.jazzy.user, (err, deserializedUser) => {
-    this.deserializedUser = deserializedUser;
-    cb(err, deserializedUser);
-  });
-};
+const manualDeserializeAuth = (d) => (cb) => cb(null, d);
 
 const alwaysDeserializeInit = (serializedUser, deserialize, done) => {
   deserialize(serializedUser, done);
@@ -186,74 +179,6 @@ const init = (modelName, overrides) => {
   return initMiddleware;
 };
 
-const deserializeUser = (modelName, overrides) => {
-  if (typeof modelName === 'object') {
-    overrides = modelName;
-    modelName = null;
-  }
-  const options = buildOptions(modelName, overrides, 'deserializeUser');
-  const onError = makeResponder(options.deserializeUserOnError, 'deserializeUserOnError');
-  const deserializeMiddleware = (req, res, next) => {
-    if (!req.user) return next();
-    req.user((err) => {
-      if (err) return onError();
-      next();
-    });
-  };
-  if (options.deserializeUserOnSuccess) return [deserializeMiddleware, makeResponder(options.deserializeUserOnSuccess, 'deserializeUserOnSuccess')];
-  return deserializeMiddleware;
-};
-
-const saveSession = (modelName, overrides) => {
-  if (typeof modelName === 'object') {
-    overrides = modelName;
-    modelName = null;
-  }
-  const options = buildOptions(modelName, overrides, 'saveSession');
-  const { serialize } = options;
-  return (req, res, next) => {
-    serialize(req.deserializedUser, (err, serializedUser) => {
-      req.jazzy.user = serializedUser;
-      req.session.jazzy = req.jazzy;
-      next();
-    });
-  };
-};
-
-const login = (modelName, overrides) => {
-  process.emitWarning(
-    '`login()` is deprecated `authenticate()` will save session if useSessions is set to true',
-    'DeprecationWarning'
-  );
-  if (typeof modelName === 'object') {
-    overrides = modelName;
-    modelName = null;
-  }
-  const options = buildOptions(modelName, overrides, 'login');
-  if (options.loginOnSuccess) return makeResponder(options.loginOnSuccess);
-  return (req, res, next) => next();
-};
-
-const logout = (modelName, overrides) => {
-  if (typeof modelName === 'object') {
-    overrides = modelName;
-    modelName = null;
-  }
-  const options = buildOptions(modelName, overrides, 'logout');
-  if (!options.useSessions) throw new Error('Cannot use Logout middleware when use sessions set false in model');
-  const logoutMiddleware = (req, res, next) => {
-    delete req.user;
-    req.jazzy = {
-      isAuthenticated: false,
-      auth: {}
-    };
-    req.session.jazzy = req.jazzy;
-    next();
-  };
-  if (options.logoutOnSuccess) return [logoutMiddleware, makeResponder(options.logoutOnSuccess, 'logoutOnSuccess')];
-  return logoutMiddleware;
-};
-
 const authenticate = (modelName, overrides) => {
   if (typeof modelName === 'object') {
     overrides = modelName;
@@ -271,6 +196,7 @@ const authenticate = (modelName, overrides) => {
   const authFunction = (req, res, next) => {
     extract(req, (error0, query) => {
       if (error0) return onError(req, res, error0, next);
+      if (!query) return onFail(req, res);
       getUser(query, (error1, user) => {
         if (error1) return onError(req, res, error1, next);
         if (!user) return onFail(req, res);
@@ -297,103 +223,99 @@ const authenticate = (modelName, overrides) => {
   return middleware.length === 1 ? authFunction : middleware;
 };
 
-const checkLogged = (modelName, overrides) => {
-  process.emitWarning(
-    '`checkLogged()` will be deprecated, use `checkAuthenticated()` instead',
-    'DeprecationWarning'
-  );
+const checkAuthenticatedBasic = (modelName, overrides, wrapperName) => {
   if (typeof modelName === 'object') {
     overrides = modelName;
     modelName = null;
   }
-  const options = buildOptions(modelName, overrides, 'checkLogged');
-  const onFail = makeResponder(options.checkLoggedOnFail, 'checkLoggedOnFail');
-  if (!options.checkLoggedOnSuccess) {
+  const onFailOption = `${wrapperName}OnFail`;
+  const onSuccessOption = `${wrapperName}OnSuccess`;
+  const options = buildOptions(modelName, overrides, wrapperName);
+  const onFail = makeResponder(options[onFailOption], onFailOption);
+  if (!options[onSuccessOption]) {
     return (req, res, next) => {
       if (req.jazzy.isAuthenticated) return next();
       onFail(req, res);
     };
   }
-  const onSuccess = makeResponder(options.checkLoggedOnSuccess, 'checkLoggedOnSuccess');
+  const onSuccess = makeResponder(options[onSuccessOption], onSuccessOption);
   return (req, res, next) => {
     if (req.jazzy.isAuthenticated) return onSuccess(req, res, next);
     onFail(req, res);
   };
 };
 
-const checkNotLogged = (modelName, overrides) => {
-  process.emitWarning(
-    '`checkNotLogged()` will be deprecated, use `checkUnauthenticated()` instead',
-    'DeprecationWarning'
-  );
+const checkUnauthenticatedBasic = (modelName, overrides, wrapperName) => {
   if (typeof modelName === 'object') {
     overrides = modelName;
     modelName = null;
   }
-  const options = buildOptions(modelName, overrides, 'checkNotLogged');
-  const onFail = makeResponder(options.checkNotLoggedOnFail, 'checkNotLoggedOnFail');
-  if (!options.checkNotLoggedOnSuccess) {
+  const onFailOption = `${wrapperName}OnFail`;
+  const onSuccessOption = `${wrapperName}OnSuccess`;
+  const options = buildOptions(modelName, overrides, wrapperName);
+  const onFail = makeResponder(options[onFailOption], onFailOption);
+  if (!options[onSuccessOption]) {
     return (req, res, next) => {
       if (!req.jazzy.isAuthenticated) return next();
       onFail(req, res);
     };
   }
-  const onSuccess = makeResponder(options.checkNotLoggedOnSuccess, 'checkNotLoggedOnSuccess');
+  const onSuccess = makeResponder(options[onSuccessOption], onSuccessOption);
   return (req, res, next) => {
     if (!req.jazzy.isAuthenticated) return onSuccess(req, res, next);
     onFail(req, res);
   };
 };
 
-const checkAuthenticated = (modelName, overrides) => {
+const checkAuthenticated = (s, o) => checkAuthenticatedBasic(s, o, 'checkAuthenticated');
+const checkUnauthenticated = (s, o) => checkUnauthenticatedBasic(s, o, 'checkUnauthenticated');
+
+const logout = (modelName, overrides) => {
   if (typeof modelName === 'object') {
     overrides = modelName;
     modelName = null;
   }
-  const options = buildOptions(modelName, overrides, 'checkAuthenticated');
-  const onFail = makeResponder(options.checkAuthenticatedOnFail, 'checkAuthenticatedOnFail');
-  if (!options.checkAuthenticatedOnSuccess) {
-    return (req, res, next) => {
-      if (req.jazzy.isAuthenticated) return next();
-      onFail(req, res);
+  const options = buildOptions(modelName, overrides, 'logout');
+  if (!options.useSessions) throw new Error('Cannot use Logout middleware when use sessions set false in model');
+  const logoutMiddleware = (req, res, next) => {
+    delete req.user;
+    req.jazzy = {
+      isAuthenticated: false,
+      auth: {}
     };
-  }
-  const onSuccess = makeResponder(options.checkAuthenticatedOnSuccess, 'checkAuthenticatedOnSuccess');
-  return (req, res, next) => {
-    if (req.jazzy.isAuthenticated) return onSuccess(req, res, next);
-    onFail(req, res);
+    req.session.jazzy = req.jazzy;
+    next();
   };
+  if (options.logoutOnSuccess) return [logoutMiddleware, makeResponder(options.logoutOnSuccess, 'logoutOnSuccess')];
+  return logoutMiddleware;
 };
 
-const checkUnauthenticated = (modelName, overrides) => {
+const deserializeUser = (modelName, overrides) => {
   if (typeof modelName === 'object') {
     overrides = modelName;
     modelName = null;
   }
-  const options = buildOptions(modelName, overrides, 'checkUnauthenticated');
-  const onFail = makeResponder(options.checkUnauthenticatedOnFail, 'checkUnauthenticatedOnFail');
-  if (!options.checkUnauthenticatedOnSuccess) {
-    return (req, res, next) => {
-      if (!req.jazzy.isAuthenticated) return next();
-      onFail(req, res);
-    };
-  }
-  const onSuccess = makeResponder(options.checkUnauthenticatedOnSuccess, 'checkUnauthenticatedOnSuccess');
-  return (req, res, next) => {
-    if (!req.jazzy.isAuthenticated) return onSuccess(req, res, next);
-    onFail(req, res);
+  const options = buildOptions(modelName, overrides, 'deserializeUser');
+  const onError = makeResponder(options.deserializeUserOnError, 'deserializeUserOnError');
+  const deserializeMiddleware = (req, res, next) => {
+    if (!req.user) return next();
+    req.user((err) => {
+      if (err) return onError();
+      next();
+    });
   };
+  if (options.deserializeUserOnSuccess) return [deserializeMiddleware, makeResponder(options.deserializeUserOnSuccess, 'deserializeUserOnSuccess')];
+  return deserializeMiddleware;
 };
 
 exports.authenticate = authenticate;
 exports.checkAuthenticated = checkAuthenticated;
-exports.checkLogged = checkLogged;
-exports.checkNotLogged = checkNotLogged;
 exports.checkUnauthenticated = checkUnauthenticated;
 exports.define = define;
 exports.deserializeUser = deserializeUser;
 exports.init = init;
 exports.initiate = init;
-exports.login = login;
 exports.logout = logout;
+exports.models = models;
 exports.modify = modify;
+exports.saveSession = saveSession;

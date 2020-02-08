@@ -1,11 +1,14 @@
 
-import { define, modify } from './setModel';
-import authenticate from './authenticate';
-import {
-  login, logout, init, deserializeUser
-} from './login';
-import { checkLogged, checkNotLogged } from './checkLogged';
-import { checkAuthenticated, checkUnauthenticated } from './checkAuthenitcated';
+import define from './middleware/define';
+import modify from './middleware/modify';
+import authenticate from './middleware/authenticate';
+import { checkAuthenticated, checkUnauthenticated } from './middleware/checkAuthenticated';
+import logout from './middleware/logout';
+import init from './middleware/init';
+import deserializeUser from './middleware/deserializeUser';
+import models from './options/models';
+import saveSession from './middleware/saveSession';
+
 
 export {
   authenticate,
@@ -17,7 +20,6 @@ export {
   deserializeUser,
   checkAuthenticated,
   checkUnauthenticated,
-  login, // deprecated with pass through and warning
-  checkLogged, // to be deprecated
-  checkNotLogged, // to be deprecated
+  models,
+  saveSession
 };

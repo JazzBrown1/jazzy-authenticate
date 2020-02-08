@@ -1,8 +1,9 @@
-import makeExtractor from './makeExtractor';
-import makeResponder from './makeResponder';
-import buildOptions from './buildOptions';
-import { init, saveSession } from './login';
-import { alwaysDeserializeAuth, manualDeserializeAuth } from './deserializers';
+import makeExtractor from '../options/makeExtractor';
+import makeResponder from '../options/makeResponder';
+import buildOptions from '../options/buildOptions';
+import saveSession from './saveSession';
+import init from './init';
+import { alwaysDeserializeAuth, manualDeserializeAuth } from '../options/deserializers';
 
 const authenticate = (modelName, overrides) => {
   if (typeof modelName === 'object') {
@@ -21,6 +22,7 @@ const authenticate = (modelName, overrides) => {
   const authFunction = (req, res, next) => {
     extract(req, (error0, query) => {
       if (error0) return onError(req, res, error0, next);
+      if (!query) return onFail(req, res);
       getUser(query, (error1, user) => {
         if (error1) return onError(req, res, error1, next);
         if (!user) return onFail(req, res);

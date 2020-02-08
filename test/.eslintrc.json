@@ -1,0 +1,15 @@
+{
+    "env": {
+        "node": true
+    },
+    "rules": {
+      "comma-dangle":"off",
+      "linebreak-style":"off",
+      "consistent-return":"off",
+      "no-underscore-dangle": "off",
+      "no-var":"off",
+      "prefer-arrow-callback":"off",
+      "func-names":"off",
+      "no-undef": "off"
+    }
+}

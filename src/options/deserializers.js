@@ -9,13 +9,7 @@ const manualDeserializeInit = (serializedUser, deserialize, done, req) => {
   });
 };
 
-const manualDeserializeAuth = (d, deserialize) => function getUser(cb) {
-  if (this.deserializedUser) return cb(null, this.deserializedUser);
-  deserialize(this.jazzy.user, (err, deserializedUser) => {
-    this.deserializedUser = deserializedUser;
-    cb(err, deserializedUser);
-  });
-};
+const manualDeserializeAuth = (d) => (cb) => cb(null, d);
 
 const alwaysDeserializeInit = (serializedUser, deserialize, done) => {
   deserialize(serializedUser, done);

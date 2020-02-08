@@ -13,9 +13,7 @@ const makeOptionsObject = (modelName, overrides) => {
 };
 
 const parseOptions = (options) => {
-  if (!options.verify) throw new Error('verify is required');
   if (typeof options.verify !== 'function') throw new Error('verify must be a function');
-  if (!options.getUser) throw new Error('getUser is required');
   if (typeof options.getUser !== 'function') throw new Error('getUser must be a function');
   return options;
 };

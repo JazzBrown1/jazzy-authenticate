@@ -1,5 +1,5 @@
-import models from './models';
-import makeDefaults from './makeDefaults';
+import models from '../options/models';
+import makeDefaults from '../options/makeDefaults';
 
 const define = (model, options, isDefault) => {
   if (typeof model === 'object') {
@@ -16,11 +16,4 @@ const define = (model, options, isDefault) => {
   }
 };
 
-const modify = (model, options) => {
-  if (!models[model]) throw new Error('Cannot modify a model that is not set');
-  const { isDefault } = models[model];
-  Object.assign(models[model], options);
-  models[model].isDefault = isDefault; // cannot overwrite default
-};
-
-export { define, modify };
+export default define;
