@@ -2,8 +2,8 @@
   "name": "jazzy-authenticate",
   "version": "0.4.1",
   "description": "Authentication middleware for Express.js",
-  "main": "dist/index.js",
-  "entry": "dist/index.js",
+  "main": "dist/jazzy-auth.js",
+  "entry": "dist/jazzy-auth.js",
   "scripts": {
     "test": "nyc --reporter=lcov --reporter=text-summary mocha",
     "coverage": "nyc report --reporter=text-lcov | coveralls",
@@ -34,9 +34,13 @@
     "mocha": "^7.0.1",
     "nyc": "^15.0.0",
     "shortid": "^2.2.15",
-    "coveralls": "^3.0.9"
+    "coveralls": "^3.0.9",
+    "rollup-plugin-uglify": "^6.0.4"
   },
   "peerDependencies": {
     "express": "4.x"
+  },
+  "dependencies": {
+    "rollup-plugin-terser": "^5.2.0"
   }
 }

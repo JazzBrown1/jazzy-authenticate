@@ -1,9 +1,9 @@
 const makeDefaults = () => ({
   name: 'Model',
-  useSessions: true,
+  useSessions: false,
   deserializeTactic: 'always',
   extract: 'body',
-  clientType: 'user',
+  clientType: 'client',
   selfInit: false,
   getUser: (query, done) => done(null, {}),
   verify: (query, user, done) => done(null, true),
