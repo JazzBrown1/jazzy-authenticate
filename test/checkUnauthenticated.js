@@ -1,6 +1,6 @@
 var shortid = require('shortid');
 const expressChain = require('./expressChain');
-var { define, checkUnauthenticated } = require('../dist/index');
+var { defineModel, checkUnauthenticated } = require('../dist/index');
 
 describe('checkUnauthenticated()', function () {
   it('should call next when not authenticated', function (done) {
@@ -12,7 +12,7 @@ describe('checkUnauthenticated()', function () {
       }
     };
     const res = {};
-    define(modelName, { useSessions: false });
+    defineModel(modelName, { useSessions: false });
     expressChain(checkUnauthenticated(modelName))(req, res, done);
   });
   it('should call onFail when authenticated', function (done) {
@@ -27,7 +27,7 @@ describe('checkUnauthenticated()', function () {
       }
     };
     const res = {};
-    define(modelName, { useSessions: false, checkUnauthenticatedOnFail: () => done() });
+    defineModel(modelName, { useSessions: false, checkUnauthenticatedOnFail: () => done() });
     expressChain(checkUnauthenticated(modelName))(req, res, () => {
       throw new Error('this should never happen');
     });
@@ -41,7 +41,7 @@ describe('checkUnauthenticated()', function () {
       }
     };
     const res = {};
-    define(modelName, { useSessions: false, checkUnauthenticatedOnSuccess: () => done() });
+    defineModel(modelName, { useSessions: false, checkUnauthenticatedOnSuccess: () => done() });
     expressChain(checkUnauthenticated(modelName))(req, res, () => {
       throw new Error('this should never happen');
     });
@@ -58,7 +58,7 @@ describe('checkUnauthenticated()', function () {
       }
     };
     const res = {};
-    define(modelName, {
+    defineModel(modelName, {
       useSessions: false,
       checkUnauthenticatedOnSuccess: () => {},
       checkUnauthenticatedOnFail: () => done()
@@ -76,7 +76,7 @@ describe('checkUnauthenticated()', function () {
       }
     };
     const res = {};
-    define(modelName, {
+    defineModel(modelName, {
       useSessions: false,
       checkUnauthenticatedOnSuccess: () => done(),
     }, true);
@@ -93,7 +93,7 @@ describe('checkUnauthenticated()', function () {
       }
     };
     const res = {};
-    define(modelName, {
+    defineModel(modelName, {
       useSessions: false,
     }, true);
     expressChain(checkUnauthenticated({ onSuccess: () => done() }))(req, res, () => {

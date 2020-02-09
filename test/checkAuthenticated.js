@@ -1,6 +1,6 @@
 var shortid = require('shortid');
 const expressChain = require('./expressChain');
-var { define, checkAuthenticated } = require('../dist/index');
+var { defineModel, checkAuthenticated } = require('../dist/index');
 
 describe('checkAuthenticated()', function () {
   it('should call next when authenticated', function (done) {
@@ -15,7 +15,7 @@ describe('checkAuthenticated()', function () {
       }
     };
     const res = {};
-    define(modelName, { useSessions: false });
+    defineModel(modelName, { useSessions: false });
     expressChain(checkAuthenticated(modelName))(req, res, done);
   });
   it('should call onFail when unauthenticated', function (done) {
@@ -27,7 +27,7 @@ describe('checkAuthenticated()', function () {
       }
     };
     const res = {};
-    define(modelName, { useSessions: false, checkAuthenticatedOnFail: () => done() });
+    defineModel(modelName, { useSessions: false, checkAuthenticatedOnFail: () => done() });
     expressChain(checkAuthenticated(modelName))(req, res, () => {
       throw new Error('this should never happen');
     });
@@ -41,7 +41,7 @@ describe('checkAuthenticated()', function () {
       }
     };
     const res = {};
-    define(modelName, {
+    defineModel(modelName, {
       useSessions: false,
       checkAuthenticatedOnSuccess: () => {},
       checkAuthenticatedOnFail: () => done()
@@ -59,7 +59,7 @@ describe('checkAuthenticated()', function () {
       }
     };
     const res = {};
-    define(modelName, {
+    defineModel(modelName, {
       useSessions: false,
       checkAuthenticatedOnFail: () => done(),
     }, true);
@@ -76,7 +76,7 @@ describe('checkAuthenticated()', function () {
       }
     };
     const res = {};
-    define(modelName, {
+    defineModel(modelName, {
       useSessions: false,
     }, true);
     expressChain(checkAuthenticated({ onFail: () => done() }))(req, res, () => {

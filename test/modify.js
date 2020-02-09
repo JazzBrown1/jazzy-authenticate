@@ -1,19 +1,19 @@
 
 var assert = require('assert');
 var shortid = require('shortid');
-var { define, models, modify } = require('../dist/index');
+var { defineModel, models, modifyModel } = require('../dist/index');
 
-describe('modify()', function () {
+describe('modifyModel()', function () {
   it('modifies included options of set model', function () {
     const modelName = shortid.generate();
-    define(modelName, { clientType: 'test' });
-    modify(modelName, { clientType: 'client' });
+    defineModel(modelName, { clientType: 'test' });
+    modifyModel(modelName, { clientType: 'client' });
     assert.equal(models[modelName].clientType, 'client');
   });
   it('throws error if unknown model name is passed', function (done) {
     const modelName = shortid.generate();
     try {
-      modify(modelName, { clientType: 'client' });
+      modifyModel(modelName, { clientType: 'client' });
     } catch (err) {
       done();
     }

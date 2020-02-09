@@ -1,6 +1,6 @@
 
-import define from './middleware/define';
-import modify from './middleware/modify';
+import defineModel from './middleware/defineModel';
+import modifyModel from './middleware/modifyModel';
 import authenticate from './middleware/authenticate';
 import { checkAuthenticated, checkUnauthenticated } from './middleware/checkAuthenticated';
 import logout from './middleware/logout';
@@ -12,8 +12,8 @@ import saveSession from './middleware/saveSession';
 
 export {
   authenticate,
-  define,
-  modify,
+  defineModel,
+  modifyModel,
   logout,
   init,
   init as initiate,

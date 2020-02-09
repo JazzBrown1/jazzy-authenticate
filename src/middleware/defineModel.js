@@ -1,7 +1,7 @@
 import models from '../options/models';
 import makeDefaults from '../options/makeDefaults';
 
-const define = (model, options, isDefault) => {
+const defineModel = (model, options, isDefault) => {
   if (typeof model === 'object') {
     isDefault = options;
     options = model;
@@ -16,4 +16,4 @@ const define = (model, options, isDefault) => {
   }
 };
 
-export default define;
+export default defineModel;

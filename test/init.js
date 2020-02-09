@@ -1,5 +1,5 @@
 var shortid = require('shortid');
-var { define, init } = require('../dist/index');
+var { defineModel, init } = require('../dist/index');
 const expressChain = require('./expressChain');
 
 describe('init()', function () {
@@ -10,7 +10,7 @@ describe('init()', function () {
       session: {}
     };
     const res = {};
-    define(modelName, { useSessions: true, initOnSuccess: () => done(), deserializeTactic: 'never' });
+    defineModel(modelName, { useSessions: true, initOnSuccess: () => done(), deserializeTactic: 'never' });
     expressChain(init(modelName))(req, res, () => {});
   });
   it('calls onError if deserialize throws error and onError is passed', function (done) {
@@ -28,7 +28,7 @@ describe('init()', function () {
       }
     };
     const res = {};
-    define(modelName, {
+    defineModel(modelName, {
       useSessions: true,
       initOnError: () => done(),
       deserialize: (user, done2) => done2(true, false)
@@ -46,7 +46,7 @@ describe('init()', function () {
       }
     };
     const res = {};
-    define(modelName, { useSessions: true });
+    defineModel(modelName, { useSessions: true });
     expressChain(init(modelName))(req, res, () => { done(); });
   });
   it('calls success middleware when onSuccess is set and useSessions is false', function (done) {
@@ -60,7 +60,7 @@ describe('init()', function () {
       }
     };
     const res = {};
-    define(modelName, { useSessions: false, initOnSuccess: () => done() });
+    defineModel(modelName, { useSessions: false, initOnSuccess: () => done() });
     expressChain(init(modelName))(req, res, () => { throw new Error('This should never happen'); });
   });
 });

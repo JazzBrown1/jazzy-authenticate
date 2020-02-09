@@ -6,7 +6,7 @@ Cml
 ```sh
 $ git clone https://github.com/JazzBrown1/jazzy-authenticate.git
 
-$ cd jazzy-authenticate/examples/userPassword
+$ cd jazzy-authenticate/examples/password
 
 $ npm install
 

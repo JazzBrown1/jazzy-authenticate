@@ -4,7 +4,7 @@ const expressChain = require('./expressChain');
 
 
 var {
-  define, init, authenticate, checkAuthenticated, deserializeUser
+  defineModel, init, authenticate, checkAuthenticated, deserializeUser
 } = require('../dist/index');
 
 
@@ -16,7 +16,7 @@ describe('never deserialize tactic', function () {
       session: {}
     };
     const res = {};
-    define(modelName, { useSessions: true, initOnSuccess: null, deserializeTactic: 'never' });
+    defineModel(modelName, { useSessions: true, initOnSuccess: null, deserializeTactic: 'never' });
     expressChain([init(modelName), authenticate(modelName)])(newReq, res, (req) => {
       const request = { session: req.session };
       expressChain([init(modelName), checkAuthenticated(modelName)])(request, res, () => {
@@ -31,7 +31,7 @@ describe('never deserialize tactic', function () {
       session: {}
     };
     const res = {};
-    define(modelName, {
+    defineModel(modelName, {
       useSessions: true,
       initOnSuccess: null,
       deserializeTactic: 'never',
@@ -58,7 +58,7 @@ describe('never deserialize tactic', function () {
       session: {}
     };
     const res = {};
-    define(modelName, {
+    defineModel(modelName, {
       useSessions: true,
       initOnSuccess: null,
       deserializeTactic: 'never',
@@ -85,7 +85,7 @@ describe('never deserialize tactic', function () {
         session: {}
       };
       const res = {};
-      define(modelName, {
+      defineModel(modelName, {
         useSessions: true,
         initOnSuccess: null,
         deserializeTactic: 'never',
@@ -111,7 +111,7 @@ describe('never deserialize tactic', function () {
         session: {}
       };
       const res = {};
-      define(modelName, {
+      defineModel(modelName, {
         useSessions: true,
         initOnSuccess: null,
         deserializeTactic: 'never',
@@ -140,7 +140,7 @@ describe('never deserialize tactic', function () {
         session: {}
       };
       const res = {};
-      define(modelName, {
+      defineModel(modelName, {
         useSessions: true,
         initOnSuccess: null,
         deserializeTactic: 'never',
@@ -167,7 +167,7 @@ describe('never deserialize tactic', function () {
         session: {}
       };
       const res = {};
-      define(modelName, {
+      defineModel(modelName, {
         useSessions: true,
         initOnSuccess: null,
         deserializeTactic: 'never',
@@ -186,7 +186,7 @@ describe('never deserialize tactic', function () {
         session: {}
       };
       const res = {};
-      define(modelName, {
+      defineModel(modelName, {
         useSessions: true,
         deserializeTactic: 'never',
         getUser: (q, d) => d(null, 'deserialized'),
@@ -207,7 +207,7 @@ describe('never deserialize tactic', function () {
       session: {}
     };
     const res = {};
-    define(modelName, {
+    defineModel(modelName, {
       useSessions: true,
       initOnSuccess: null,
       deserializeTactic: 'never',
@@ -231,7 +231,7 @@ describe('always deserialize tactic', function () {
       session: {}
     };
     const res = {};
-    define(modelName, { useSessions: true, initOnSuccess: null, deserializeTactic: 'always' });
+    defineModel(modelName, { useSessions: true, initOnSuccess: null, deserializeTactic: 'always' });
     expressChain([init(modelName), authenticate(modelName)])(newReq, res, (req) => {
       const request = { session: req.session };
       expressChain([init(modelName), checkAuthenticated(modelName)])(request, res, () => {

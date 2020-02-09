@@ -33,7 +33,7 @@ const models = {
   _default: makeDefaults()
 };
 
-const define = (model, options, isDefault) => {
+const defineModel = (model, options, isDefault) => {
   if (typeof model === 'object') {
     isDefault = options;
     options = model;
@@ -48,8 +48,8 @@ const define = (model, options, isDefault) => {
   }
 };
 
-const modify = (model, options) => {
-  if (!models[model]) throw new Error('Cannot modify a model that is not set');
+const modifyModel = (model, options) => {
+  if (!models[model]) throw new Error('Cannot modifyModel a model that is not set');
   const { isDefault } = models[model];
   Object.assign(models[model], options);
   models[model].isDefault = isDefault; // cannot overwrite default
@@ -311,11 +311,11 @@ const deserializeUser = (modelName, overrides) => {
 exports.authenticate = authenticate;
 exports.checkAuthenticated = checkAuthenticated;
 exports.checkUnauthenticated = checkUnauthenticated;
-exports.define = define;
+exports.defineModel = defineModel;
 exports.deserializeUser = deserializeUser;
 exports.init = init;
 exports.initiate = init;
 exports.logout = logout;
 exports.models = models;
-exports.modify = modify;
+exports.modifyModel = modifyModel;
 exports.saveSession = saveSession;

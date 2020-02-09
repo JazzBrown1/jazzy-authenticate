@@ -1,7 +1,7 @@
 
 var assert = require('assert');
 var shortid = require('shortid');
-var { define, logout } = require('../dist/index');
+var { defineModel, logout } = require('../dist/index');
 const expressChain = require('./expressChain');
 
 describe('logout()', function () {
@@ -21,7 +21,7 @@ describe('logout()', function () {
         }
       }
     };
-    define(modelName, { useSessions: true });
+    defineModel(modelName, { useSessions: true });
     const res = {};
     logout(modelName)(req, res, () => {
       assert.equal(req.jazzy.isAuthenticated, false);
@@ -31,7 +31,7 @@ describe('logout()', function () {
   });
   it('throws error if use sessions set to false', function (done) {
     const modelName = shortid.generate();
-    define(modelName, { useSessions: false });
+    defineModel(modelName, { useSessions: false });
     try { logout(modelName); } catch (err) { done(); }
   });
   it('calls onSuccess() if set', function (done) {
@@ -50,7 +50,7 @@ describe('logout()', function () {
         }
       }
     };
-    define(modelName, { useSessions: true, onSuccess: () => done() });
+    defineModel(modelName, { useSessions: true, onSuccess: () => done() });
     const res = {};
     expressChain(logout(modelName))(req, res, () => {
       throw new Error('this should never happen');
@@ -72,7 +72,7 @@ describe('logout()', function () {
         }
       }
     };
-    define(modelName, { useSessions: true, onSuccess: () => done() }, true);
+    defineModel(modelName, { useSessions: true, onSuccess: () => done() }, true);
     const res = {};
     expressChain(logout())(req, res, () => {
       throw new Error('this should never happen');
@@ -94,7 +94,7 @@ describe('logout()', function () {
         }
       }
     };
-    define(modelName, { useSessions: true });
+    defineModel(modelName, { useSessions: true });
     const res = {};
     expressChain(logout({ onSuccess: () => done() }))(req, res, () => {
       throw new Error('this should never happen');

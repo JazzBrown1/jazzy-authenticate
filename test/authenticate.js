@@ -2,7 +2,7 @@
 var assert = require('assert');
 var shortid = require('shortid');
 var {
-  define, authenticate, init
+  defineModel, authenticate, init
 } = require('../dist/index');
 
 // completely inefficient helper function for testing
@@ -16,7 +16,7 @@ describe('authenticate()', function () {
       body: {}
     };
     const res = {};
-    define(modelName, { useSessions: false, selfInit: true });
+    defineModel(modelName, { useSessions: false, selfInit: true });
     expressChain(authenticate(modelName))(req, res, () => done());
   });
   it('should save auth info to session object', function (done) {
@@ -26,7 +26,7 @@ describe('authenticate()', function () {
       session: {}
     };
     const res = {};
-    define(modelName, { useSessions: true, selfInit: true });
+    defineModel(modelName, { useSessions: true, selfInit: true });
     expressChain(authenticate(modelName))(req, res, () => {
       assert.equal(Boolean(req.session.jazzy.auth[modelName]), true);
       done();
@@ -39,7 +39,7 @@ describe('authenticate()', function () {
       session: {}
     };
     const res = {};
-    define(modelName, { useSessions: true, selfInit: true });
+    defineModel(modelName, { useSessions: true, selfInit: true });
     expressChain(authenticate(modelName))(req, res, () => {
       assert.equal(Boolean(req.session.jazzy.auth[modelName]), true);
       done();
@@ -52,7 +52,7 @@ describe('authenticate()', function () {
       session: {}
     };
     const res = {};
-    define(modelName, {
+    defineModel(modelName, {
       useSessions: true,
       selfInit: true,
       authenticateOnSuccess: () => {
@@ -71,7 +71,7 @@ describe('authenticate()', function () {
       session: {}
     };
     const res = {};
-    define(modelName, {
+    defineModel(modelName, {
       useSessions: true,
       selfInit: true,
       authenticateOnFail: () => done(),
@@ -88,7 +88,7 @@ describe('authenticate()', function () {
       session: {}
     };
     const res = {};
-    define(modelName, {
+    defineModel(modelName, {
       useSessions: true,
       selfInit: true,
       authenticateOnFail: () => done(),
@@ -105,7 +105,7 @@ describe('authenticate()', function () {
       session: {}
     };
     const res = {};
-    define(modelName, {
+    defineModel(modelName, {
       useSessions: true,
       selfInit: true,
       authenticateOnFail: () => done(),
@@ -122,7 +122,7 @@ describe('authenticate()', function () {
       session: {}
     };
     const res = {};
-    define(modelName, {
+    defineModel(modelName, {
       useSessions: true,
       selfInit: true,
       authenticateOnError: () => done(),
@@ -139,7 +139,7 @@ describe('authenticate()', function () {
       session: {}
     };
     const res = {};
-    define(modelName, {
+    defineModel(modelName, {
       useSessions: true,
       selfInit: true,
       authenticateOnError: () => done(),
@@ -156,7 +156,7 @@ describe('authenticate()', function () {
       session: {}
     };
     const res = {};
-    define(modelName, {
+    defineModel(modelName, {
       useSessions: true,
       selfInit: true,
       authenticateOnError: () => done(),
@@ -168,7 +168,7 @@ describe('authenticate()', function () {
   });
   it('throws an error if model not set', function (done) {
     try {
-      define('test', { clientType: 'test' });
+      defineModel('test', { clientType: 'test' });
       authenticate('not_set');
     } catch (err) {
       done();
@@ -181,7 +181,7 @@ describe('authenticate()', function () {
       session: {}
     };
     const res = {};
-    define(modelName, {
+    defineModel(modelName, {
       useSessions: false,
       selfInit: false
     }, true);
@@ -195,7 +195,7 @@ describe('authenticate()', function () {
       body: {}
     };
     const res = {};
-    define(modelName, {
+    defineModel(modelName, {
       selfInit: true,
       useSessions: false,
       authenticateOnSuccess: () => done(),
@@ -213,7 +213,7 @@ describe('authenticate()', function () {
       }
     };
     const res = {};
-    define(modelName, {
+    defineModel(modelName, {
       useSessions: false,
     });
     expressChain(authenticate({ onSuccess: () => done() }))(req, res, () => {

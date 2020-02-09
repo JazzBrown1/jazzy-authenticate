@@ -1,5 +1,5 @@
 # Jazzy Authenticate
-> Fast and versatile authentication middleware for ExpressJs.
+> Fast and versatile authentication middleware for Express.js.
 
 [![Version][npm-version]][npm-url]
 [![Dependencies][npm-dependencies]][npm-url]
@@ -29,10 +29,10 @@ $ npm install jazzy-authenticate
 ## Usage
 
 
-Use the define function to define an Authentication Model.
+Use the defineModel function to define an Authentication Model.
 
 ```sh
-define(
+defineModel(
   'password',
   {
     extract: 'body',
