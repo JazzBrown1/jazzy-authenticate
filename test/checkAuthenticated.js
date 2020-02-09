@@ -1,6 +1,6 @@
 var shortid = require('shortid');
 const expressChain = require('./expressChain');
-var { defineModel, checkAuthenticated } = require('../dist/index');
+var { defineModel, checkAuthenticated } = require('../dist/jazzy-auth');
 
 describe('checkAuthenticated()', function () {
   it('should call next when authenticated', function (done) {

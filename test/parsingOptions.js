@@ -1,7 +1,7 @@
 
 var assert = require('assert');
 var shortid = require('shortid');
-var { defineModel, models, authenticate } = require('../dist/index');
+var { defineModel, models, authenticate } = require('../dist/jazzy-auth');
 
 describe('defineModel()', function () {
   it('thorw error if getUser() is not a function', function (done) {

@@ -1,7 +1,7 @@
 
 var assert = require('assert');
 var shortid = require('shortid');
-var { defineModel, logout } = require('../dist/index');
+var { defineModel, logout } = require('../dist/jazzy-auth');
 const expressChain = require('./expressChain');
 
 describe('logout()', function () {

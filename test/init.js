@@ -1,5 +1,5 @@
 var shortid = require('shortid');
-var { defineModel, init } = require('../dist/index');
+var { defineModel, init } = require('../dist/jazzy-auth');
 const expressChain = require('./expressChain');
 
 describe('init()', function () {

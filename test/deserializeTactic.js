@@ -5,7 +5,7 @@ const expressChain = require('./expressChain');
 
 var {
   defineModel, init, authenticate, checkAuthenticated, deserializeUser
-} = require('../dist/index');
+} = require('../dist/jazzy-auth');
 
 
 describe('never deserialize tactic', function () {

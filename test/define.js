@@ -1,7 +1,7 @@
 
 var assert = require('assert');
 var shortid = require('shortid');
-var { defineModel, models } = require('../dist/index');
+var { defineModel, models } = require('../dist/jazzy-auth');
 
 describe('defineModel()', function () {
   it('should save defineModeld model into models object', function () {

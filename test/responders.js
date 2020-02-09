@@ -1,6 +1,6 @@
 var shortid = require('shortid');
 const expressChain = require('./expressChain');
-var { defineModel, checkAuthenticated } = require('../dist/index');
+var { defineModel, checkAuthenticated } = require('../dist/jazzy-auth');
 
 describe('responders', function () {
   it('should call res.send and checkAuthenticatedOnSuccess send response set when authenticated', function (done) {

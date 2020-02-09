@@ -3,7 +3,7 @@ var assert = require('assert');
 var shortid = require('shortid');
 var {
   defineModel, authenticate, init
-} = require('../dist/index');
+} = require('../dist/jazzy-auth');
 
 // completely inefficient helper function for testing
 const expressChain = require('./expressChain');
