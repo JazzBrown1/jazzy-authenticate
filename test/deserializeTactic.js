@@ -51,6 +51,31 @@ describe('never deserialize tactic', function () {
       });
     });
   });
+  it('passes using default deserialize method()', function (done) {
+    const modelName = shortid.generate();
+    const newReq = {
+      body: {},
+      session: {}
+    };
+    const res = {};
+    defineModel(modelName, {
+      useSessions: true,
+      initOnSuccess: null,
+      deserializeTactic: 'never',
+      getUser: (q, d) => d(null, 'user'),
+    });
+    expressChain([init(modelName), authenticate(modelName)])(newReq, res, (req) => {
+      const request = { session: req.session };
+      expressChain([init(modelName), checkAuthenticated(modelName)])(request, res, (req2) => {
+        req2.user((err, user) => {
+          assert.equal(user, 'user');
+          req2.user((err2, user2) => {
+            done(assert.equal(user2, 'user'));
+          });
+        });
+      });
+    });
+  });
   it('deserializes user by using deserializeUser() middleware', function (done) {
     const modelName = shortid.generate();
     const newReq = {
