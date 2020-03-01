@@ -11,9 +11,9 @@ import saveSession from './middleware/saveSession';
 
 
 export {
-  authenticate,
   defineModel,
   modifyModel,
+  authenticate,
   logout,
   init,
   init as initiate,

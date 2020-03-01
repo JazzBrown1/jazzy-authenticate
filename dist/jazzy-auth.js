@@ -123,7 +123,10 @@ const manualDeserializeInit = (serializedUser, deserialize, done, req) => {
   });
 };
 
-const manualDeserializeAuth = (d) => (cb) => cb(null, d);
+const manualDeserializeAuth = (d, req) => {
+  req.deserializedUser = d;
+  return (cb) => cb(null, d);
+};
 
 const alwaysDeserializeInit = (serializedUser, deserialize, done) => {
   deserialize(serializedUser, done);
@@ -186,7 +189,7 @@ const authenticate = (modelName, overrides) => {
   }
   const options = buildOptions(modelName, overrides, 'authenticate');
   const {
-    verify, getUser, clientType, name, deserialize
+    verify, getUser, clientType, name
   } = options;
   const extract = makeExtractor(options.extract);
   const onError = makeResponder(options.authenticateOnError, 'authenticateOnError');
@@ -194,21 +197,20 @@ const authenticate = (modelName, overrides) => {
   const deserializer = options.deserializeTactic === 'always' ? alwaysDeserializeAuth : manualDeserializeAuth;
 
   const authFunction = (req, res, next) => {
-    extract(req, (error0, query) => {
+    extract(req, (error0, query, reason) => {
       if (error0) return onError(req, res, error0, next);
-      if (!query) return onFail(req, res);
-      getUser(query, (error1, user) => {
+      if (!query) return onFail(req, res, reason);
+      getUser(query, (error1, user, reason1) => {
         if (error1) return onError(req, res, error1, next);
-        if (!user) return onFail(req, res);
-        verify(query, user, (error2, result) => {
+        if (!user) return onFail(req, res, reason1);
+        verify(query, user, (error2, result, reason2) => {
           if (error2) return onError(req, res, error2, next);
-          if (!result) return onFail(req, res);
+          if (!result) return onFail(req, res, reason2);
           req.jazzy.auth[name] = {
             clientType, query, model: name, result
           };
           req.jazzy.isAuthenticated = true;
-          req.user = deserializer(user, deserialize);
-          req.deserializedUser = user;
+          req.user = deserializer(user, req);
           next();
         }, req);
       }, req);
