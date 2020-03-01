@@ -9,7 +9,10 @@ const manualDeserializeInit = (serializedUser, deserialize, done, req) => {
   });
 };
 
-const manualDeserializeAuth = (d) => (cb) => cb(null, d);
+const manualDeserializeAuth = (d, req) => {
+  req.deserializedUser = d;
+  return (cb) => cb(null, d);
+};
 
 const alwaysDeserializeInit = (serializedUser, deserialize, done) => {
   deserialize(serializedUser, done);
