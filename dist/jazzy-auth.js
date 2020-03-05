@@ -112,8 +112,7 @@ const saveSession = (overrides) => {
   };
 };
 
-const manualDeserializeInit = (serializedUser, deserialize, done, req) => {
-  req.deserializedUser = null;
+const manualDeserializeInit = (serializedUser, deserialize, done) => {
   done(null, function getUser(cb) {
     if (this.deserializedUser) return cb(null, this.deserializedUser);
     deserialize(this.jazzy.user, (err, deserializedUser2) => {
@@ -123,13 +122,13 @@ const manualDeserializeInit = (serializedUser, deserialize, done, req) => {
   });
 };
 
-const manualDeserializeAuth = (d, req) => {
-  req.deserializedUser = d;
-  return (cb) => cb(null, d);
-};
+const manualDeserializeAuth = () => function getUser(cb) { cb(null, this.deserializedUser); };
 
-const alwaysDeserializeInit = (serializedUser, deserialize, done) => {
-  deserialize(serializedUser, done);
+const alwaysDeserializeInit = (serializedUser, deserialize, done, req) => {
+  deserialize(serializedUser, (err, user) => {
+    req.deserializedUser = user;
+    done(err, user);
+  });
 };
 
 const alwaysDeserializeAuth = (deserializedUser) => deserializedUser;
@@ -164,6 +163,7 @@ const init = (modelName, overrides) => {
   const initMiddleware = (req, res, next) => {
     if (req.session.jazzy) {
       req.jazzy = req.session.jazzy;
+      req.deserializedUser = null;
       if (req.jazzy.user) {
         deserializer(req.jazzy.user, deserialize, (err, user) => {
           if (err) onError(req, res, err, next);
@@ -210,6 +210,7 @@ const authenticate = (modelName, overrides) => {
             clientType, query, model: name, result
           };
           req.jazzy.isAuthenticated = true;
+          req.deserializedUser = user;
           req.user = deserializer(user, req);
           next();
         }, req);

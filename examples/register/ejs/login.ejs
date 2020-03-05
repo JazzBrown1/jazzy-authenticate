@@ -1,0 +1,28 @@
+<%- include('header'); -%>
+
+<%if (error) { %>
+  <span style="color: red; font-weight: bold;">
+ <%= error %>
+  </span>
+ <% } %>
+<h4>Log In</h4>
+<form action="/login" method="post">
+	<div style="margin: 15px;">
+    <label>Username:</label>
+    <input type="text" name="username" style="padding:5px"/><br/>
+  </div>
+  <div style="margin: 15px;">
+    <label>
+      Password
+    </label>
+    <input type="password" name="password" style="padding:5px"/>
+	</div>
+	<div style="margin: 15px;">
+	  <input type="submit" value="Log In"/>
+	</div>
+</form>
+<p style="font-style: italic">
+  hint: username: bob, password: password
+</p>
+<a href="/register">Register</a>
+<%- include('footer'); -%>
