@@ -33,6 +33,7 @@ const authenticate = (modelName, overrides) => {
             clientType, query, model: name, result
           };
           req.jazzy.isAuthenticated = true;
+          req.deserializedUser = user;
           req.user = deserializer(user, req);
           next();
         }, req);

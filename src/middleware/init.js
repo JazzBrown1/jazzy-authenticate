@@ -32,6 +32,7 @@ const init = (modelName, overrides) => {
   const initMiddleware = (req, res, next) => {
     if (req.session.jazzy) {
       req.jazzy = req.session.jazzy;
+      req.deserializedUser = null;
       if (req.jazzy.user) {
         deserializer(req.jazzy.user, deserialize, (err, user) => {
           if (err) onError(req, res, err, next);
